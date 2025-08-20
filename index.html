@@ -5,60 +5,55 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Roleplay AI - Chat Imersivo</title>
     <style>
-        body { font-family: Arial, sans-serif; background-color: #e6f0fa; text-align: center; padding: 20px; }
-        .container { max-width: 600px; margin: 0 auto; }
-        input { padding: 5px; margin: 5px; }
-        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
-        #output { margin-top: 20px; padding: 10px; background: #fff; border-radius: 5px; }
+        body { font-family: Arial, sans-serif; background-color: #e6f0fa; margin: 0; padding: 20px; }
+        .chat-container { max-width: 600px; margin: 0 auto; height: 70vh; overflow-y: auto; border: 1px solid #ccc; padding: 10px; background: #fff; border-radius: 5px; }
+        .message { margin: 10px; padding: 10px; border-radius: 5px; max-width: 70%; }
+        .user-message { background-color: #007bff; color: white; margin-left: auto; }
+        .bot-message { background-color: #e9ecef; color: black; }
+        .input-area { max-width: 600px; margin: 10px auto; display: flex; gap: 10px; }
+        input { flex: 1; padding: 5px; }
+        button { padding: 5px 10px; }
+        img, audio { max-width: 100%; }
     </style>
 </head>
 <body>
     <h1>Roleplay AI - Chat Imersivo</h1>
-    <div class="container">
-        <input type="text" id="promptInput" placeholder="Digite seu prompt aqui...">
-        <button onclick="generateImage()">Gerar Imagem</button>
-        <button onclick="generateText()">Gerar Texto</button>
-        <button onclick="generateAudio()">Gerar Áudio</button>
-        <div id="output"></div>
+    <div class="chat-container" id="chatContainer"></div>
+    <div class="input-area">
+        <input type="text" id="promptInput" placeholder="Digite sua mensagem...">
+        <button onclick="sendMessage()">Enviar</button>
     </div>
 
     <script>
-        async function generateImage() {
+        async function sendMessage() {
             const prompt = document.getElementById('promptInput').value;
-            if (!prompt) return alert('Por favor, insira um prompt!');
-            try {
-                const response = await fetch(`https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}`);
-                const blob = await response.blob();
-                document.getElementById('output').innerHTML = `<img src="${URL.createObjectURL(blob)}" alt="Imagem gerada" style="max-width: 100%;">`;
-            } catch (error) {
-                document.getElementById('output').innerHTML = 'Erro ao gerar imagem.';
-            }
-        }
+            if (!prompt) return alert('Por favor, insira uma mensagem!');
+            
+            // Adicionar mensagem do usuário
+            addMessage(prompt, 'user');
+            document.getElementById('promptInput').value = '';
 
-        async function generateText() {
-            const prompt = document.getElementById('promptInput').value;
-            if (!prompt) return alert('Por favor, insira um prompt!');
+            // Simular resposta do bot
             try {
                 const response = await fetch(`https://text.pollinations.ai/${encodeURIComponent(prompt)}`);
                 const text = await response.text();
-                document.getElementById('output').innerHTML = `<p>${text}</p>`;
+                addMessage(text, 'bot');
             } catch (error) {
-                document.getElementById('output').innerHTML = 'Erro ao gerar texto.';
+                addMessage('Erro ao gerar resposta.', 'bot');
             }
         }
 
-        async function generateAudio() {
-            const prompt = document.getElementById('promptInput').value;
-            const voice = prompt('Escolha a voz (ex.: alloy):');
-            if (!prompt || !voice) return alert('Por favor, insira um prompt e uma voz!');
-            try {
-                const response = await fetch(`https://text.pollinations.ai/${encodeURIComponent(prompt)}?model=openai-audio&voice=${voice}`);
-                const audioUrl = await response.text(); // Ajustar conforme resposta real da API
-                document.getElementById('output').innerHTML = `<audio controls><source src="${audioUrl}" type="audio/mpeg"></audio>`;
-            } catch (error) {
-                document.getElementById('output').innerHTML = 'Erro ao gerar áudio.';
-            }
+        function addMessage(text, sender) {
+            const chatContainer = document.getElementById('chatContainer');
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('message', `${sender}-message`);
+            messageDiv.innerHTML = text;
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight; // Rolar para a última mensagem
         }
+
+        // Exemplo inicial
+        addMessage('Olá! Estou pronto para conversar. Envie um prompt!', 'bot');
     </script>
 </body>
 </html>
