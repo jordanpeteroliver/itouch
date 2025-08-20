@@ -1,65 +1,52 @@
-<!doctype html>
-<html lang="pt">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://getbootstrap.com/docs/5.3/assets/css/docs.css" rel="stylesheet">
-    <title>Bootstrap Example</title>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-  </head>
-  <body class="p-3 m-0 border-0 bd-example m-0 border-0">
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Roleplay AI - Chat Imersivo</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #e6f0fa; text-align: center; padding: 20px; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+        #output { margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <h1>Roleplay AI - Chat Imersivo</h1>
+    <div>
+        <button onclick="generateImage()">Gerar Imagem</button>
+        <button onclick="generateText()">Gerar Texto</button>
+        <button onclick="generateAudio()">Gerar Áudio</button>
+    </div>
+    <div id="output"></div>
 
-    <!-- Example Code -->
-    
-        
-    <nav class="navbar navbar-expand-lg bg-body-tertiary">
-      <div class="container-fluid">
-        <a class="navbar-brand" href="#">Navbar</a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavDropdown" aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
-          <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarNavDropdown">
-          <ul class="navbar-nav">
-            <li class="nav-item">
-              <a class="nav-link active" aria-current="page" href="#">Home</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="#">Features</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="#">Pricing</a>
-            </li>
-            <li class="nav-item dropdown">
-              <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                Dropdown link
-              </a>
-              <ul class="dropdown-menu">
-                <li><a class="dropdown-item" href="#">Action</a></li>
-                <li><a class="dropdown-item" href="#">Another action</a></li>
-                <li><a class="dropdown-item" href="#">Something else here</a></li>
-              </ul>
-            </li>
-          </ul>
-        </div>
-      </div>
-    </nav>
-    
-      
-    <!-- End Example Code -->
-  </body>
+    <script>
+        async function generateImage() {
+            const prompt = prompt("Digite o prompt para a imagem:");
+            if (prompt) {
+                const response = await fetch(`https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}`);
+                const blob = await response.blob();
+                document.getElementById('output').innerHTML = `<img src="${URL.createObjectURL(blob)}" alt="Imagem gerada">`;
+            }
+        }
 
-<div class="container my-3 text-center">
-    <h1 class="display-4">Welcome to Our Website</h1>
+        async function generateText() {
+            const prompt = prompt("Digite o prompt para o texto:");
+            if (prompt) {
+                const response = await fetch(`https://text.pollinations.ai/${encodeURIComponent(prompt)}`);
+                const text = await response.text();
+                document.getElementById('output').innerHTML = `<p>${text}</p>`;
+            }
+        }
 
-    <img src="https://raw.githubusercontent.com/jordanpeteroliver/itouch/refs/heads/main/midia/apple/iPhone%2014%20Pro%20Max%20Colours.jpeg" class="img-fluid" alt="...">
-
-
-
-    <p class="lead">Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nulla euismod malesuada sem vel dictum. Duis dignissim massa vitae lacinia eleifend. Morbi a nisl eu sem luctus viverra id ut lacus. Nam et odio nisl. Suspendisse hendrerit commodo ligula at feugiat. Morbi non magna quis neque consequat tincidunt.</p>
-    <p>Praesent vel nulla sit amet magna pretium ultricies. Etiam sagittis neque vitae nisi aliquet, eu suscipit erat hendrerit. Morbi porta, ligula ut laoreet convallis, magna mi dignissim risus, vel accumsan velit velit at ipsum. Aliquam erat volutpat. Quisque eu augue vitae quam congue tempor sit amet non sem. Fusce vitae neque massa. Cras venenatis neque vel suscipit convallis. Vestibulum semper malesuada ipsum vel egestas. In convallis, lorem sed viverra vestibulum, tortor nisl aliquam neque, eget tristique mi velit eget justo. Donec condimentum velit nec nulla viverra, id pulvinar tellus viverra. Sed vitae dolor ut nisi volutpat vestibulum.</p>
-</div>
-
-
-    
+        async function generateAudio() {
+            const prompt = prompt("Digite o prompt para o áudio:");
+            const voice = prompt("Escolha a voz (ex.: alloy):");
+            if (prompt && voice) {
+                const response = await fetch(`https://text.pollinations.ai/${encodeURIComponent(prompt)}?model=openai-audio&voice=${voice}`);
+                const audioUrl = await response.text(); // Ajustar conforme resposta real da API
+                document.getElementById('output').innerHTML = `<audio controls><source src="${audioUrl}" type="audio/mpeg"></audio>`;
+            }
+        }
+    </script>
+</body>
 </html>
