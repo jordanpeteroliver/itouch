@@ -115,6 +115,63 @@
         const personaSelect = document.getElementById('personaSelect');
         const customPersona = document.getElementById('customPersona');
 
+        // Adicione no início do seu script (após as declarações de elementos DOM)
+let chatHistory = JSON.parse(localStorage.getItem('chatHistory')) || [];
+
+// Modifique a função addMessage para salvar no histórico:
+async function addMessage(content, isUser = false, generateImage = false) {
+    // Mantenha toda a criação da mensagem igual...
+    
+    // Salve no histórico
+    chatHistory.push({
+        content,
+        isUser,
+        timestamp: new Date().toISOString()
+    });
+    
+    localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
+}
+
+// Crie uma função para carregar o histórico ao iniciar:
+function loadChatHistory() {
+    messageHistory.innerHTML = '';
+    
+    chatHistory.forEach(msg => {
+        const div = document.createElement('div');
+        div.className = `flex flex-col ${msg.isUser ? 'items-end' : 'items-start'}`;
+        
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `max-w-[80%] ${msg.isUser ? 'bg-blue-600 text-white' : 'bg-gray-100'} rounded-lg p-3 mb-2`;
+        
+        // Recrie elementos conforme necessário (imagens/áudio)
+        messageDiv.innerHTML = `<p>${msg.content}</p>`;
+        
+        div.appendChild(messageDiv);
+        messageHistory.appendChild(div);
+    });
+}
+
+// Chame ao carregar a página:
+window.addEventListener('DOMContentLoaded', () => {
+    loadChatHistory();
+});
+
+// Adicione um botão para limpar o histórico (opcional):
+const clearButton = document.createElement('button');
+clearButton.textContent = 'Limpar Histórico';
+clearButton.className='bg-red-500 text-white px-3 py-1 rounded mlHow about you elaborate on which specific technical challenges or improvements you'd like to focus on first? That way we can create an even more targeted solution tailored precisely to your vision. Maybe:
+
+1. **Session persistence** 
+   - Refine the local storage handling for large conversations  
+   - Add expiration dates for old chats  
+
+2. **Context continuity**
+   - Implement conversation summarization  
+   - Store persona context separately  
+
+Would help prioritize! Just tell me what matters most right now
+
+
         // Event listener para mudança de persona
         personaSelect.addEventListener('change', () => {
             if (personaSelect.value === 'custom') {
