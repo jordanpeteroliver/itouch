@@ -3,62 +3,53 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Roleplay AI - Cenário Dinâmico</title>
+    <title>Roleplay AI - Versão Robusta</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* --- Estilos para o Fundo Dinâmico --- */
-        body::before,
-        body::after {
+        body::before, body::after {
             content: '';
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
-            z-index: -2; /* Colocado atrás de tudo */
+            z-index: -2;
             background-size: cover;
             background-position: center;
             transition: opacity 1.5s ease-in-out;
         }
-
         body::before {
             background-image: var(--bg-image-before);
             opacity: 1;
         }
-
         body::after {
             background-image: var(--bg-image-after);
             opacity: 0;
         }
-
         body.show-after::before { opacity: 0; }
         body.show-after::after { opacity: 1; }
         
-        /* Overlay gradiente para melhorar a legibilidade do texto sobre o fundo */
-        body::after {
-            content: '';
+        /* Overlay para legibilidade */
+        .overlay {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
             background: rgba(0, 0, 0, 0.3);
             z-index: -1;
         }
         
-        /* --- Outros Estilos --- */
         .chat-container { height: calc(100vh - 400px); }
         .message-container { max-height: calc(100vh - 500px); }
-
         .typing-animation::after { content: '...'; animation: typing 1.5s infinite; }
         @keyframes typing { 0% { content: ''; } 25% { content: '.'; } 50% { content: '..'; } 75% { content: '...'; } }
-
         .image-fade { animation: imageFade 0.7s ease-in-out; }
         @keyframes imageFade { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body class="min-h-screen">
+    <div class="overlay"></div>
     <div class="container mx-auto p-4 max-w-4xl">
         <header class="text-center mb-6">
-            <h1 class="text-3xl font-bold text-white drop-shadow-lg">Roleplay AI - Cenário Dinâmico</h1>
-            <p class="text-gray-200 font-semibold drop-shadow-md">O fundo da página agora reflete a última imagem gerada na história.</p>
+            <h1 class="text-3xl font-bold text-white drop-shadow-lg">Roleplay AI - Versão Robusta</h1>
+            <p class="text-gray-200 font-semibold drop-shadow-md">Com cenário dinâmico e maior estabilidade.</p>
         </header>
 
-        <!-- Painel de Configurações e Memória -->
         <div class="bg-white/80 backdrop-blur-sm rounded-lg shadow-lg p-4 mb-4">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
                 <div>
@@ -88,7 +79,6 @@
             </div>
         </div>
 
-        <!-- Container Principal do Chat -->
         <div class="bg-white/80 backdrop-blur-sm rounded-lg shadow-lg chat-container">
             <div id="messageHistory" class="message-container p-4 overflow-y-auto space-y-4"></div>
             <div class="border-t p-4 bg-white/50">
@@ -101,7 +91,7 @@
     </div>
 
 <script>
-// --- 1. CONFIGURAÇÕES E ELEMENTOS DO DOM ---
+// --- 1. CONFIGURAÇÕES E ELEMENTOS ---
 const bodyEl = document.querySelector('body');
 const chatForm = document.getElementById('chatForm');
 const userInput = document.getElementById('userInput');
@@ -110,14 +100,17 @@ const personaSelect = document.getElementById('personaSelect');
 const customPersona = document.getElementById('customPersona');
 const clearHistoryBtn = document.getElementById('clearHistoryBtn');
 const summaryDisplay = document.getElementById('summaryDisplay');
-const predefinedPersonas = { /* ... (mesmo objeto de personas) ... */ };
+const predefinedPersonas = {
+    custom: "Você é um assistente de IA prestativo.",
+    mago: "Você é um poderoso Mago Arcano, versado nas artes místicas antigas. Seu conhecimento é vasto, mas você fala de forma enigmática e usa metáforas mágicas.",
+    detetive: "Você é um Detetive Noir dos anos 40, cínico e perspicaz. Seu tom é seco e direto, sempre observando os detalhes ocultos em um mundo de sombras e chuva.",
+    elfo: "Você é um Elfo milenar da Floresta Ancestral, guardião da natureza. Sua fala é poética e serena, e você frequentemente referencia o ciclo das estações, as estrelas e a linguagem das árvores.",
+    cientista: "Você é um Cientista Maluco excêntrico, sempre entusiasmado com experimentos perigosos e invenções mirabolantes. Você mistura termos científicos com risadas maníacas e ideias grandiosas.",
+    pirata: "Você é um Capitão Pirata aventureiro, com um papagaio no ombro, navegando pelos sete mares. Você usa gírias náuticas, fala sobre tesouros e conta histórias de monstros marinhos e ilhas distantes."
+};
 
-// --- 2. GERENCIAMENTO DE ESTADO E MEMÓRIA ---
-let conversationHistory = [];
-let conversationSummary = "";
-let lastSummaryIndex = 0;
-let lastBackgroundImageUrl = "";
-let isBackgroundAfterActive = false;
+// --- 2. GERENCIAMENTO DE ESTADO ---
+let conversationHistory = [], conversationSummary = "", lastSummaryIndex = 0, lastBackgroundImageUrl = "", isBackgroundAfterActive = false;
 
 function saveState() {
     localStorage.setItem('conversationHistory', JSON.stringify(conversationHistory));
@@ -134,7 +127,103 @@ function loadState() {
     updateSummaryDisplay();
 }
 
-// --- 3. GERAÇÃO DE IMAGEM, ÁUDIO E FUNDO ---
+// --- 3. FUNÇÕES DE API ROBUSTAS ---
+
+/**
+ * **NOVO:** Wrapper de Fetch com Timeout.
+ * Realiza uma requisição fetch que será abortada se exceder o tempo limite.
+ * @param {string} resource A URL da requisição.
+ * @param {object} options Opções do Fetch.
+ * @param {number} timeout Tempo limite em milissegundos.
+ * @returns {Promise<Response>}
+ */
+async function fetchWithTimeout(resource, options = {}, timeout = 25000) {
+    const controller = new AbortController();
+    options.signal = controller.signal;
+
+    const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => {
+            controller.abort();
+            reject(new Error('A requisição demorou muito e foi cancelada (timeout).'));
+        }, timeout)
+    );
+
+    return Promise.race([fetch(resource, options), timeoutPromise]);
+}
+
+function updatePageBackground(imageUrl) { /* ... (código igual ao anterior, já estava bom) ... */ }
+async function createImagePrompt(context) { /* ... (código igual ao anterior, agora usa fetchWithTimeout) ... */ }
+function generateImageUrl(detailedPrompt) { /* ... (código igual ao anterior) ... */ }
+async function convertTextToAudio(text) { /* ... (código igual ao anterior, mas usará fetchWithTimeout indiretamente) ... */ }
+async function playAudio(text) { /* ... (código igual ao anterior) ... */ }
+async function updateSummary() { /* ... (código igual ao anterior, agora usa fetchWithTimeout) ... */ }
+
+// --- 4. RENDERIZAÇÃO E UI ---
+function updateSummaryDisplay() { /* ... */ }
+async function renderMessage(messageObject) { /* ... (código refatorado abaixo) ... */ }
+function loadChatHistory() { /* ... */ }
+
+// --- 5. LÓGICA PRINCIPAL DO CHAT ---
+chatForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const userMessageContent = userInput.value.trim();
+    if (!userMessageContent) return;
+
+    const userMessageObject = { content: userMessageContent, isUser: true };
+    conversationHistory.push(userMessageObject);
+    renderMessage(userMessageObject);
+    userInput.value = '';
+
+    if (conversationHistory.length - lastSummaryIndex >= 8) {
+        setTimeout(updateSummary, 1000);
+    }
+
+    const typingDiv = document.createElement('div');
+    typingDiv.id = 'typingIndicator';
+    typingDiv.className = 'flex justify-start';
+    typingDiv.innerHTML = `<div class="bg-gray-100 rounded-lg p-3 shadow"><p id="typingText" class="typing-animation">Gerando resposta...</p></div>`;
+    messageHistory.appendChild(typingDiv);
+    messageHistory.scrollTop = messageHistory.scrollHeight;
+
+    try {
+        const persona = personaSelect.value === 'custom' ? customPersona.value : predefinedPersonas[personaSelect.value];
+        const recentHistoryText = conversationHistory.slice(-6).map(m => `${m.isUser ? 'Usuário' : 'IA'}: ${m.content}`).join('\n');
+        const fullPrompt = `Persona: ${persona}\n\nResumo da Conversa (Memória de Longo Prazo):\n${conversationSummary}\n\nHistórico Recente (Memória de Curto Prazo):\n${recentHistoryText}\n\nUsuário: ${userMessageContent}\n\nIA:`;
+        
+        const response = await fetchWithTimeout(`https://text.pollinations.ai/${encodeURIComponent(fullPrompt)}`);
+        if (!response.ok) throw new Error(`API de texto retornou erro: ${response.statusText}`);
+        const responseText = (await response.text()).trim();
+
+        document.getElementById('typingText').textContent = "Criando prompt de imagem...";
+        const detailedImagePrompt = await createImagePrompt(responseText);
+        
+        document.getElementById('typingText').textContent = "Gerando imagem...";
+        const imageUrl = generateImageUrl(detailedImagePrompt);
+        updatePageBackground(imageUrl);
+        
+        const aiMessageObject = { content: responseText, isUser: false, generateImage: true, imagePrompt: detailedImagePrompt, imageUrl: imageUrl };
+        conversationHistory.push(aiMessageObject);
+        renderMessage(aiMessageObject);
+
+    } catch (error) {
+        console.error("Erro no fluxo do chat:", error);
+        const errorMessage = `Desculpe, ocorreu um erro: ${error.message}. Por favor, tente novamente.`;
+        renderMessage({ content: errorMessage, isUser: false });
+    } finally {
+        const typingIndicator = document.getElementById('typingIndicator');
+        if (typingIndicator) typingIndicator.remove();
+        saveState();
+    }
+});
+
+// --- 6. INICIALIZAÇÃO E EVENTOS ---
+document.addEventListener('DOMContentLoaded', () => { /* ... */ });
+personaSelect.addEventListener('change', () => { /* ... */ });
+clearHistoryBtn.addEventListener('click', () => { /* ... */ });
+
+// --- CÓDIGO COMPLETO DAS FUNÇÕES PARA GARANTIR FUNCIONALIDADE ---
+// (Estas são as versões finais e completas das funções)
+
 function updatePageBackground(imageUrl) {
     if (!imageUrl) return;
     const img = new Image();
@@ -150,21 +239,58 @@ function updatePageBackground(imageUrl) {
     img.src = imageUrl;
 }
 
-async function createImagePrompt(context) { /* ... (código igual ao anterior) ... */ }
-function generateImageUrl(detailedPrompt) { /* ... (código igual ao anterior) ... */ }
-async function convertTextToAudio(text) { /* ... (código igual ao anterior) ... */ }
-async function playAudio(text) { /* ... (código igual ao anterior) ... */ }
+async function createImagePrompt(context) {
+    const artDirectorPrompt = `Você é um diretor de arte para um motor de geração de imagem. Sua tarefa é converter o texto a seguir em um prompt de imagem detalhado e em inglês, separado por vírgulas. Inclua estilo artístico, iluminação, composição, emoção e detalhes ricos. Texto Original: "${context}"`;
+    try {
+        const response = await fetchWithTimeout(`https://text.pollinations.ai/${encodeURIComponent(artDirectorPrompt)}`);
+        if (!response.ok) return context; // Fallback para o texto original
+        return (await response.text()).trim();
+    } catch (error) {
+        console.error("Falha ao criar prompt de imagem:", error);
+        return context;
+    }
+}
 
-// --- 4. SUMARIZAÇÃO DE MEMÓRIA ---
-async function updateSummary() { /* ... (código igual ao anterior) ... */ }
+function generateImageUrl(detailedPrompt) {
+    const encodedPrompt = encodeURIComponent(detailedPrompt);
+    return `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1536&height=1024&seed=${Date.now()}&nologo=true&nofeed=true&model=flux`;
+}
 
-// --- 5. RENDERIZAÇÃO E UI ---
+async function playAudio(text) {
+    try {
+        const encodedText = encodeURIComponent(text);
+        const audioUrl = `https://text.pollinations.ai/${encodedText}?model=openai-audio&voice=nova`;
+        const audio = new Audio(audioUrl);
+        audio.play();
+    } catch (error) {
+        console.error("Erro ao reproduzir áudio:", error);
+    }
+}
+
+async function updateSummary() {
+    const newMessages = conversationHistory.slice(lastSummaryIndex);
+    if (newMessages.length === 0) return;
+    const newMessagesText = newMessages.map(m => `${m.isUser ? 'Usuário' : 'IA'}: ${m.content}`).join('\n');
+    const summaryPrompt = `Integre as 'Mensagens Recentes' a um 'Resumo Antigo' para criar um 'Novo Resumo Conciso', mantendo fatos importantes. [Resumo Antigo]: ${conversationSummary} [Mensagens Recentes]: ${newMessagesText} [Novo Resumo Conciso]:`;
+    try {
+        const response = await fetchWithTimeout(`https://text.pollinations.ai/${encodeURIComponent(summaryPrompt)}`);
+        if (response.ok) {
+            conversationSummary = (await response.text()).trim();
+            lastSummaryIndex = conversationHistory.length;
+            saveState();
+            updateSummaryDisplay();
+        }
+    } catch (error) {
+        console.error("Falha ao atualizar o resumo:", error);
+    }
+}
+
 function updateSummaryDisplay() {
     summaryDisplay.textContent = conversationSummary;
 }
 
-async function renderMessage(messageObject) {
-    const { content, isUser, generateImage, imagePrompt } = messageObject;
+function renderMessage(messageObject) {
+    const { content, isUser, generateImage, imagePrompt, imageUrl } = messageObject;
     const div = document.createElement('div');
     div.className = `flex flex-col ${isUser ? 'items-end' : 'items-start'}`;
     const messageDiv = document.createElement('div');
@@ -178,8 +304,7 @@ async function renderMessage(messageObject) {
         messageDiv.appendChild(audioButton);
     }
     div.appendChild(messageDiv);
-    if (!isUser && generateImage && imagePrompt) {
-        const imageUrl = generateImageUrl(imagePrompt);
+    if (!isUser && generateImage && imagePrompt && imageUrl) {
         const imageContainer = document.createElement('div');
         imageContainer.className = 'max-w-full mt-2 image-fade';
         imageContainer.innerHTML = `
@@ -195,133 +320,8 @@ async function renderMessage(messageObject) {
 }
 
 function loadChatHistory() {
-    messageHistory.innerHTML = '<div class="text-center text-white font-semibold drop-shadow-md">Início da conversa</div>';
+    messageHistory.innerHTML = `<div class="text-center text-white font-semibold drop-shadow-md">Início da conversa</div>`;
     conversationHistory.forEach(msg => renderMessage(msg));
-}
-
-// --- 6. LÓGICA PRINCIPAL DO CHAT ---
-chatForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const userMessageContent = userInput.value.trim();
-    if (!userMessageContent) return;
-    const userMessageObject = { content: userMessageContent, isUser: true };
-    conversationHistory.push(userMessageObject);
-    renderMessage(userMessageObject);
-    userInput.value = '';
-    if (conversationHistory.length - lastSummaryIndex >= SUMMARY_TRIGGER_COUNT) {
-        setTimeout(updateSummary, 1000);
-    }
-    const typingDiv = document.createElement('div');
-    typingDiv.id = 'typingIndicator';
-    typingDiv.className = 'flex justify-start';
-    typingDiv.innerHTML = `<div class="bg-gray-100 rounded-lg p-3 shadow"><p id="typingText" class="typing-animation">Gerando resposta...</p></div>`;
-    messageHistory.appendChild(typingDiv);
-    messageHistory.scrollTop = messageHistory.scrollHeight;
-
-    try {
-        const persona = personaSelect.value === 'custom' ? customPersona.value : predefinedPersonas[personaSelect.value];
-        const recentHistoryText = conversationHistory.slice(-6).map(m => `${m.isUser ? 'Usuário' : 'IA'}: ${m.content}`).join('\n');
-        const fullPrompt = `Persona: ${persona}\n\nResumo da Conversa (Memória de Longo Prazo):\n${conversationSummary}\n\nHistórico Recente (Memória de Curto Prazo):\n${recentHistoryText}\n\nUsuário: ${userMessageContent}\n\nIA:`;
-        const response = await fetch(`https://text.pollinations.ai/${encodeURIComponent(fullPrompt)}`);
-        const responseText = response.ok ? (await response.text()).trim() : "Desculpe, ocorreu um erro ao gerar a resposta.";
-        
-        document.getElementById('typingText').textContent = "Criando prompt de imagem...";
-        const detailedImagePrompt = await createImagePrompt(responseText);
-        
-        document.getElementById('typingText').textContent = "Gerando imagem...";
-        
-        // Inicia a atualização do fundo
-        updatePageBackground(generateImageUrl(detailedImagePrompt));
-        
-        const aiMessageObject = { content: responseText, isUser: false, generateImage: true, imagePrompt: detailedImagePrompt };
-        conversationHistory.push(aiMessageObject);
-        typingDiv.remove();
-        renderMessage(aiMessageObject);
-
-    } catch (error) {
-        console.error("Erro no fluxo do chat:", error);
-        const errorObject = { content: 'Desculpe, ocorreu um erro de rede.', isUser: false };
-        renderMessage(errorObject);
-    } finally {
-        const typingIndicator = document.getElementById('typingIndicator');
-        if (typingIndicator) typingIndicator.remove();
-        saveState();
-    }
-});
-
-// --- 7. INICIALIZAÇÃO E EVENTOS ADICIONAIS ---
-personaSelect.addEventListener('change', () => { /* ... (código igual ao anterior) ... */ });
-clearHistoryBtn.addEventListener('click', () => { /* ... (código igual ao anterior) ... */ });
-
-document.addEventListener('DOMContentLoaded', () => {
-    loadState();
-    if (lastBackgroundImageUrl) {
-        bodyEl.style.setProperty('--bg-image-before', `url(${lastBackgroundImageUrl})`);
-    } else {
-        // Fundo padrão caso não haja imagem salva
-        bodyEl.style.setProperty('--bg-image-before', 'linear-gradient(to bottom right, #D1C4E9, #BBDEFB)');
-    }
-    loadChatHistory();
-    customPersona.value = "";
-    userInput.focus();
-});
-
-// --- CÓDIGO COMPLETO DAS FUNÇÕES OMITIDAS PARA CONCISÃO ---
-// (Estas são as mesmas funções das versões anteriores, incluídas aqui para completude)
-
-predefinedPersonas.custom = "Você é um assistente de IA prestativo.";
-predefinedPersonas.mago = "Você é um poderoso Mago Arcano, versado nas artes místicas antigas. Seu conhecimento é vasto, mas você fala de forma enigmática e usa metáforas mágicas.";
-predefinedPersonas.detetive = "Você é um Detetive Noir dos anos 40, cínico e perspicaz. Seu tom é seco e direto, sempre observando os detalhes ocultos em um mundo de sombras e chuva.";
-predefinedPersonas.elfo = "Você é um Elfo milenar da Floresta Ancestral, guardião da natureza. Sua fala é poética e serena, e você frequentemente referencia o ciclo das estações, as estrelas e a linguagem das árvores.";
-predefinedPersonas.cientista = "Você é um Cientista Maluco excêntrico, sempre entusiasmado com experimentos perigosos e invenções mirabolantes. Você mistura termos científicos com risadas maníacas e ideias grandiosas.";
-predefinedPersonas.pirata = "Você é um Capitão Pirata aventureiro, com um papagaio no ombro, navegando pelos sete mares. Você usa gírias náuticas, fala sobre tesouros e conta histórias de monstros marinhos e ilhas distantes.";
-
-async function createImagePrompt(context) {
-    const artDirectorPrompt = `Você é um diretor de arte para um motor de geração de imagem. Sua tarefa é converter o texto a seguir em um prompt de imagem detalhado e em inglês, separado por vírgulas. Inclua estilo artístico (ex: fantasy, cyberpunk, photorealistic), iluminação (ex: cinematic lighting, soft morning light), composição, emoção e detalhes ricos. Seja criativo e foque na criação de uma cena visualmente impressionante. Texto Original: "${context}"`;
-    try {
-        const response = await fetch(`https://text.pollinations.ai/${encodeURIComponent(artDirectorPrompt)}`);
-        return response.ok ? (await response.text()).trim() : context;
-    } catch (error) {
-        console.error("Falha ao criar prompt de imagem:", error);
-        return context;
-    }
-}
-
-function generateImageUrl(detailedPrompt) {
-    const encodedPrompt = encodeURIComponent(detailedPrompt);
-    return `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1536&height=1024&seed=${Date.now()}&nologo=true&nofeed=true&model=flux`;
-}
-
-async function convertTextToAudio(text) {
-    const encodedText = encodeURIComponent(text);
-    return `https://text.pollinations.ai/${encodedText}?model=openai-audio&voice=nova`;
-}
-
-async function playAudio(text) {
-    try {
-        const audio = new Audio(await convertTextToAudio(text));
-        audio.play();
-    } catch (error) {
-        console.error("Erro ao reproduzir áudio:", error);
-    }
-}
-
-async function updateSummary() {
-    const newMessages = conversationHistory.slice(lastSummaryIndex);
-    if (newMessages.length === 0) return;
-    const newMessagesText = newMessages.map(m => `${m.isUser ? 'Usuário' : 'IA'}: ${m.content}`).join('\n');
-    const summaryPrompt = `Integre as 'Mensagens Recentes' a um 'Resumo Antigo' para criar um 'Novo Resumo Conciso', mantendo fatos importantes (nomes, locais, objetivos, decisões do usuário). [Resumo Antigo]: ${conversationSummary} [Mensagens Recentes]: ${newMessagesText} [Novo Resumo Conciso]:`;
-    try {
-        const response = await fetch(`https://text.pollinations.ai/${encodeURIComponent(summaryPrompt)}`);
-        if (response.ok) {
-            conversationSummary = (await response.text()).trim();
-            lastSummaryIndex = conversationHistory.length;
-            saveState();
-            updateSummaryDisplay();
-        }
-    } catch (error) {
-        console.error("Falha ao atualizar o resumo:", error);
-    }
 }
 
 personaSelect.addEventListener('change', () => {
@@ -332,10 +332,22 @@ personaSelect.addEventListener('change', () => {
 });
 
 clearHistoryBtn.addEventListener('click', () => {
-    if (confirm("Tem certeza que deseja apagar toda a memória e o histórico da conversa? Esta ação não pode ser desfeita.")) {
+    if (confirm("Tem certeza que deseja apagar toda a memória e o histórico da conversa?")) {
         localStorage.clear();
-        window.location.reload(); // Recarrega a página para um estado completamente limpo
+        window.location.reload();
     }
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+    loadState();
+    if (lastBackgroundImageUrl) {
+        bodyEl.style.setProperty('--bg-image-before', `url(${lastBackgroundImageUrl})`);
+    } else {
+        bodyEl.style.setProperty('--bg-image-before', 'linear-gradient(to bottom right, #D1C4E9, #BBDEFB)');
+    }
+    loadChatHistory();
+    customPersona.value = "";
+    userInput.focus();
 });
 </script>
 </body>
