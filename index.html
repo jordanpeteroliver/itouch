@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Roleplay AI - Versão Final</title>
+    <title>Roleplay AI - Versão Final para Deploy</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        /* Fundo Dinâmico com Transição */
         body::before, body::after {
             content: ''; position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: -2;
             background-size: cover; background-position: center; transition: opacity 1.5s ease-in-out;
@@ -15,7 +16,10 @@
         body.show-after::before { opacity: 0; }
         body.show-after::after { opacity: 1; }
         
+        /* Overlay para Legibilidade */
         .overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.3); z-index: -1; }
+        
+        /* Layout e Animações */
         .chat-container { height: calc(100vh - 400px); }
         .message-container { max-height: calc(100vh - 500px); }
         .typing-animation::after { content: '...'; animation: typing 1.5s infinite; }
@@ -23,12 +27,19 @@
         .image-fade { animation: imageFade 0.7s ease-in-out; }
         @keyframes imageFade { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
+        /* Estilos dos Botões de Ação */
+        .action-btn {
+            font-weight: 600; cursor: pointer; transition: all 0.2s;
+        }
+        .action-btn:disabled {
+            opacity: 0.7; cursor: not-allowed;
+        }
         .copy-btn {
             background-color: #e2e8f0; color: #4a5568; border: 1px solid #cbd5e0; border-radius: 6px;
-            padding: 2px 8px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s;
+            padding: 2px 8px; font-size: 12px;
         }
-        .copy-btn:hover { background-color: #cbd5e0; }
-        .copy-btn:disabled { background-color: #a0aec0; color: #f7fafc; cursor: default; }
+        .copy-btn:hover:not(:disabled) { background-color: #cbd5e0; }
+        .copy-btn:disabled { background-color: #a0aec0; color: #f7fafc; }
         .copy-feedback {
             font-size: 12px; font-weight: 600; opacity: 0;
             transition: opacity 0.3s ease-in-out; pointer-events: none;
@@ -65,7 +76,6 @@ const customPersona = document.getElementById('customPersona');
 const clearHistoryBtn = document.getElementById('clearHistoryBtn');
 const summaryDisplay = document.getElementById('summaryDisplay');
 
-// **CORRIGIDO:** Objeto de personas definido completamente no início do script.
 const predefinedPersonas = {
     "custom": "Você é um assistente de IA prestativo.",
     "mago": "Você é um poderoso Mago Arcano, versado nas artes místicas antigas. Seu conhecimento é vasto, mas você fala de forma enigmática e usa metáforas mágicas.",
@@ -85,7 +95,7 @@ async function fetchWithTimeout(resource, options = {}, timeout = 25000) { const
 function updatePageBackground(imageUrl) { if (!imageUrl) return; const img = new Image(); img.onload = () => { const targetVar = isBackgroundAfterActive ? '--bg-image-before' : '--bg-image-after'; bodyEl.style.setProperty(targetVar, `url(${imageUrl})`); bodyEl.classList.toggle('show-after'); isBackgroundAfterActive = !isBackgroundAfterActive; lastBackgroundImageUrl = imageUrl; saveState(); }; img.onerror = () => console.error("Falha ao carregar a imagem de fundo:", imageUrl); img.src = imageUrl; }
 async function createImagePrompt(context) { const artDirectorPrompt = `Você é um diretor de arte para um motor de geração de imagem. Sua tarefa é converter o texto a seguir em um prompt de imagem detalhado e em inglês, separado por vírgulas. Inclua estilo artístico, iluminação, composição, emoção e detalhes ricos. Texto Original: "${context}"`; try { const response = await fetchWithTimeout(`https://text.pollinations.ai/${encodeURIComponent(artDirectorPrompt)}`); if (!response.ok) return context; return (await response.text()).trim(); } catch (error) { console.error("Falha ao criar prompt de imagem:", error); return context; } }
 function generateImageUrl(detailedPrompt) { const encodedPrompt = encodeURIComponent(detailedPrompt); return `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1536&height=1024&seed=${Date.now()}&nologo=true&nofeed=true&model=flux`; }
-async function playAudio(text) { try { const encodedText = encodeURIComponent(text); const audioUrl = `https://text.pollinations.ai/${encodedText}?model=openai-audio&voice=nova`; const audio = new Audio(audioUrl); audio.play(); } catch (error) { console.error("Erro ao reproduzir áudio:", error); } }
+async function playAudio(buttonElement, text) { const originalText = buttonElement.textContent; buttonElement.textContent = 'Carregando...'; buttonElement.disabled = true; try { const encodedText = encodeURIComponent(text); const audioUrl = `https://text.pollinations.ai/${encodedText}?model=openai-audio&voice=nova`; const audio = new Audio(audioUrl); await new Promise((resolve, reject) => { audio.onended = resolve; audio.onerror = reject; audio.play(); }); } catch (error) { console.error("Erro ao reproduzir áudio:", error); buttonElement.textContent = 'Erro!'; setTimeout(() => { buttonElement.textContent = originalText; buttonElement.disabled = false; }, 2000); return; } buttonElement.textContent = originalText; buttonElement.disabled = false; }
 async function updateSummary() { const newMessages = conversationHistory.slice(lastSummaryIndex); if (newMessages.length === 0) return; const newMessagesText = newMessages.map(m => `${m.isUser ? 'Usuário' : 'IA'}: ${m.content}`).join('\n'); const summaryPrompt = `Integre as 'Mensagens Recentes' a um 'Resumo Antigo' para criar um 'Novo Resumo Conciso', mantendo fatos importantes. [Resumo Antigo]: ${conversationSummary} [Mensagens Recentes]: ${newMessagesText} [Novo Resumo Conciso]:`; try { const response = await fetchWithTimeout(`https://text.pollinations.ai/${encodeURIComponent(summaryPrompt)}`); if (response.ok) { conversationSummary = (await response.text()).trim(); lastSummaryIndex = conversationHistory.length; saveState(); updateSummaryDisplay(); } } catch (error) { console.error("Falha ao atualizar o resumo:", error); } }
 async function copyToClipboard(buttonElement) { const messageDiv = buttonElement.closest('.max-w-\\[80\\%\\]'); const textToCopy = messageDiv.querySelector('p').innerText; const feedbackElement = messageDiv.querySelector('.copy-feedback'); try { await navigator.clipboard.writeText(textToCopy); buttonElement.textContent = 'Copiado!'; buttonElement.disabled = true; feedbackElement.textContent = 'Sucesso!'; feedbackElement.style.color = '#2f855a'; feedbackElement.classList.add('show'); setTimeout(() => { buttonElement.textContent = 'Copiar'; buttonElement.disabled = false; feedbackElement.classList.remove('show'); }, 2000); } catch (err) { console.error('Falha ao copiar texto: ', err); feedbackElement.textContent = 'Falha ao copiar!'; feedbackElement.style.color = '#c53030'; feedbackElement.classList.add('show'); setTimeout(() => { feedbackElement.classList.remove('show'); }, 2000); } }
 
@@ -102,12 +112,12 @@ function renderMessage(messageObject) {
         const actionsContainer = document.createElement('div');
         actionsContainer.className = "mt-3 flex items-center gap-4";
         const audioButton = document.createElement('button');
-        audioButton.className = "text-blue-800 font-bold underline text-sm";
+        audioButton.className = "text-blue-800 underline text-sm action-btn";
         audioButton.textContent = "Ouvir";
-        audioButton.onclick = () => playAudio(content);
+        audioButton.onclick = function() { playAudio(this, content); };
         actionsContainer.appendChild(audioButton);
         const copyButton = document.createElement('button');
-        copyButton.className = "copy-btn";
+        copyButton.className = "copy-btn action-btn";
         copyButton.textContent = "Copiar";
         copyButton.onclick = function() { copyToClipboard(this); };
         actionsContainer.appendChild(copyButton);
@@ -171,21 +181,7 @@ chatForm.addEventListener('submit', async (e) => {
 });
 
 // --- 6. INICIALIZAÇÃO E EVENTOS ---
-
-// **CORRIGIDO E MELHORADO:** Event listener da seleção de persona.
-personaSelect.addEventListener('change', () => {
-    const selectedValue = personaSelect.value;
-    if (selectedValue === 'custom') {
-        customPersona.value = ''; // Limpa o campo
-        customPersona.disabled = false;
-        customPersona.focus(); // Coloca o cursor no campo para o usuário digitar
-    } else {
-        // Pega a descrição do objeto 'predefinedPersonas'
-        customPersona.value = predefinedPersonas[selectedValue];
-        customPersona.disabled = true;
-    }
-});
-
+personaSelect.addEventListener('change', () => { const selectedValue = personaSelect.value; if (selectedValue === 'custom') { customPersona.value = ''; customPersona.disabled = false; customPersona.focus(); } else { customPersona.value = predefinedPersonas[selectedValue]; customPersona.disabled = true; } });
 clearHistoryBtn.addEventListener('click', () => { if (confirm("Tem certeza que deseja apagar toda a memória e o histórico da conversa?")) { localStorage.clear(); window.location.reload(); } });
 document.addEventListener('DOMContentLoaded', () => { loadState(); if (lastBackgroundImageUrl) { bodyEl.style.setProperty('--bg-image-before', `url(${lastBackgroundImageUrl})`); } else { bodyEl.style.setProperty('--bg-image-before', 'linear-gradient(to bottom right, #D1C4E9, #BBDEFB)'); } loadChatHistory(); customPersona.value = ""; userInput.focus(); });
 </script>
