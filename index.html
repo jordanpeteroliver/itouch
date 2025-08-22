@@ -8,6 +8,7 @@
     <style>
         .chat-container {
             height: calc(100vh - 320px);
+            min-height: 400px;
         }
         .message-container {
             max-height: calc(100vh - 420px);
@@ -62,9 +63,13 @@
                         id="customPersona" 
                         class="w-full p-2 border rounded h-20 resize-none"
                         placeholder="Descreva a personalidade do seu personagem..."
+                        disabled
                     ></textarea>
                 </div>
             </div>
+            <button id="clearHistory" class="bg-red-500 text-white px-3 py-1 rounded mt-2" aria-label="Limpar histórico">
+                Limpar Histórico
+            </button>
         </div>
 
         <!-- Container do Chat -->
@@ -85,10 +90,12 @@
                         class="flex-1 p-2 border rounded"
                         placeholder="Digite sua mensagem..."
                         required
+                        aria-label="Digite sua mensagem"
                     >
                     <button
                         type="submit"
                         class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                        aria-label="Enviar mensagem"
                     >
                         Enviar
                     </button>
@@ -114,79 +121,61 @@
         const messageHistory = document.getElementById('messageHistory');
         const personaSelect = document.getElementById('personaSelect');
         const customPersona = document.getElementById('customPersona');
+        const clearHistoryButton = document.getElementById('clearHistory');
 
-        // Adicione no início do seu script (após as declarações de elementos DOM)
-let chatHistory = JSON.parse(localStorage.getItem('chatHistory')) || [];
+        // Histórico de chat com limite
+        const MAX_HISTORY_LENGTH = 50;
+        let chatHistory = JSON.parse(localStorage.getItem('chatHistory')) || [];
 
-// Modifique a função addMessage para salvar no histórico:
-async function addMessage(content, isUser = false, generateImage = false) {
-    // Mantenha toda a criação da mensagem igual...
-    
-    // Salve no histórico
-    chatHistory.push({
-        content,
-        isUser,
-        timestamp: new Date().toISOString()
-    });
-    
-    localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
-}
+        // Função para carregar o histórico
+        function loadChatHistory() {
+            messageHistory.innerHTML = '';
+            
+            chatHistory.forEach(msg => {
+                const div = document.createElement('div');
+                div.className = `flex flex-col ${msg.isUser ? 'items-end' : 'items-start'}`;
+                
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `max-w-[80%] ${msg.isUser ? 'bg-blue-600 text-white' : 'bg-gray-100'} rounded-lg p-3 mb-2`;
+                messageDiv.innerHTML = `<p>${msg.content}</p>`;
+                
+                if (!msg.isUser && msg.imageUrl) {
+                    const imageDiv = document.createElement('div');
+                    imageDiv.className = 'max-w-full mt-2 image-fade';
+                    imageDiv.innerHTML = `<img src="${msg.imageUrl}" alt="Contexto visual" class="rounded-lg shadow-md">`;
+                    div.appendChild(imageDiv);
+                }
 
-// Crie uma função para carregar o histórico ao iniciar:
-function loadChatHistory() {
-    messageHistory.innerHTML = '';
-    
-    chatHistory.forEach(msg => {
-        const div = document.createElement('div');
-        div.className = `flex flex-col ${msg.isUser ? 'items-end' : 'items-start'}`;
-        
-        const messageDiv = document.createElement('div');
-        messageDiv.className = `max-w-[80%] ${msg.isUser ? 'bg-blue-600 text-white' : 'bg-gray-100'} rounded-lg p-3 mb-2`;
-        
-        // Recrie elementos conforme necessário (imagens/áudio)
-        messageDiv.innerHTML = `<p>${msg.content}</p>`;
-        
-        div.appendChild(messageDiv);
-        messageHistory.appendChild(div);
-    });
-}
+                if (!msg.isUser && msg.audioText) {
+                    const audioButton = document.createElement('button');
+                    audioButton.className = 'mt-2 text-blue-600 underline text-sm';
+                    audioButton.textContent = 'Ouvir';
+                    audioButton.onclick = () => playAudio(msg.audioText);
+                    messageDiv.appendChild(audioButton);
+                }
 
-// Chame ao carregar a página:
-window.addEventListener('DOMContentLoaded', () => {
-    loadChatHistory();
-});
+                div.appendChild(messageDiv);
+                messageHistory.appendChild(div);
+            });
+        }
 
-// Adicione um botão para limpar o histórico (opcional):
-const clearButton = document.createElement('button');
-clearButton.textContent = 'Limpar Histórico';
-clearButton.className='bg-red-500 text-white px-3 py-1 rounded mlHow about you elaborate on which specific technical challenges or improvements you'd like to focus on first? That way we can create an even more targeted solution tailored precisely to your vision. Maybe:
+        // Função para limpar o histórico
+        clearHistoryButton.addEventListener('click', () => {
+            chatHistory = [];
+            localStorage.removeItem('chatHistory');
+            loadChatHistory();
+        });
 
-1. **Session persistence** 
-   - Refine the local storage handling for large conversations  
-   - Add expiration dates for old chats  
-
-2. **Context continuity**
-   - Implement conversation summarization  
-   - Store persona context separately  
-
-Would help prioritize! Just tell me what matters most right now
-
-
-        // Event listener para mudança de persona
-        personaSelect.addEventListener('change', () => {
-            if (personaSelect.value === 'custom') {
-                customPersona.disabled = false;
-            } else {
-                customPersona.value = predefinedPersonas[personaSelect.value];
-                customPersona.disabled = true;
-            }
+        // Carregar histórico ao iniciar
+        window.addEventListener('DOMContentLoaded', () => {
+            loadChatHistory();
         });
 
         // Função para gerar imagem panorâmica
         async function generatePanoramicImage(context) {
             const imagePrompt = `${context} in a panoramic artistic style`;
-            const width = 1920; // Largura panorâmica
-            const height = 1080; // Altura panorâmica
+            const width = 1920;
+            const height = 1080;
             const encodedPrompt = encodeURIComponent(imagePrompt);
             return `https://image.pollinations.ai/prompt/${encodedPrompt}?width=${width}&height=${height}`;
         }
@@ -197,35 +186,6 @@ Would help prioritize! Just tell me what matters most right now
             return `https://text.pollinations.ai/${encodedText}?model=openai-audio&voice=${voice}`;
         }
 
-        // Função para adicionar mensagem ao histórico
-        async function addMessage(content, isUser = false, generateImage = false) {
-            const div = document.createElement('div');
-            div.className = `flex flex-col ${isUser ? 'items-end' : 'items-start'}`;
-            
-            // Mensagem de texto
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `max-w-[80%] ${isUser ? 'bg-blue-600 text-white' : 'bg-gray-100'} rounded-lg p-3 mb-2`;
-            messageDiv.innerHTML = `
-                <p>${content}</p>
-                ${!isUser ? `<button onclick="playAudio('${content}')" class="mt-2 text-blue-600 underline text-sm">Ouvir</button>` : ""}
-            `;
-            div.appendChild(messageDiv);
-
-            // Gerar e adicionar imagem para respostas do bot
-            if (!isUser && generateImage) {
-                const imageDiv = document.createElement('div');
-                imageDiv.className = 'max-w-full mt-2 image-fade';
-                const imageUrl = await generatePanoramicImage(content);
-                imageDiv.innerHTML = `
-                    <img src="${imageUrl}" alt="Contexto visual" class="rounded-lg shadow-md">
-                `;
-                div.appendChild(imageDiv);
-            }
-
-            messageHistory.appendChild(div);
-            messageHistory.scrollTop = messageHistory.scrollHeight;
-        }
-
         // Função para reproduzir áudio
         async function playAudio(text) {
             const audioUrl = await convertTextToAudio(text);
@@ -233,7 +193,81 @@ Would help prioritize! Just tell me what matters most right now
             audio.play();
         }
 
-        // Event Listener para o formulário
+        // Função para adicionar mensagem ao histórico
+        async function addMessage(content, isUser = false, generateImage = false) {
+            const div = document.createElement('div');
+            div.className = `flex flex-col ${isUser ? 'items-end' : 'items-start'}`;
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `max-w-[80%] ${isUser ? 'bg-blue-600 text-white' : 'bg-gray-100'} rounded-lg p-3 mb-2`;
+            messageDiv.innerHTML = `<p>${content}</p>`;
+            
+            let imageUrl = null;
+            let audioText = null;
+
+            if (!isUser && generateImage) {
+                imageUrl = await generatePanoramicImage(content);
+                const imageDiv = document.createElement('div');
+                imageDiv.className = 'max-w-full mt-2 image-fade';
+                imageDiv.innerHTML = `<img src="${imageUrl}" alt="Contexto visual" class="rounded-lg shadow-md">`;
+                div.appendChild(imageDiv);
+            }
+
+            if (!isUser) {
+                audioText = content;
+                const audioButton = document.createElement('button');
+                audioButton.className = 'mt-2 text-blue-600 underline text-sm';
+                audioButton.textContent = 'Ouvir';
+                audioButton.onclick = () => playAudio(content);
+                messageDiv.appendChild(audioButton);
+            }
+
+            div.appendChild(messageDiv);
+            messageHistory.appendChild(div);
+            messageHistory.scrollTop = messageHistory.scrollHeight;
+
+            // Salve no histórico
+            chatHistory.push({
+                content,
+                isUser,
+                imageUrl,
+                audioText,
+                timestamp: new Date().toISOString()
+            });
+
+            if (chatHistory.length > MAX_HISTORY_LENGTH) {
+                chatHistory.shift();
+            }
+
+            localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
+        }
+
+        // Função para buscar resposta da API
+        async function fetchResponse(prompt) {
+            try {
+                const response = await fetch(`https://text.pollinations.ai/${encodeURIComponent(prompt)}`);
+                if (!response.ok) {
+                    throw new Error(`Erro na API: ${response.statusText}`);
+                }
+                return await response.text();
+            } catch (error) {
+                console.error('Erro ao chamar a API:', error);
+                return "Desculpe, ocorreu um erro ao gerar a resposta.";
+            }
+        }
+
+        // Event listener para mudança de persona
+        personaSelect.addEventListener('change', () => {
+            if (personaSelect.value === 'custom') {
+                customPersona.disabled = false;
+                customPersona.value = "";
+            } else {
+                customPersona.value = predefinedPersonas[personaSelect.value];
+                customPersona.disabled = true;
+            }
+        });
+
+        // Event listener para o formulário
         chatForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             
@@ -257,13 +291,14 @@ Would help prioritize! Just tell me what matters most right now
             messageHistory.scrollTop = messageHistory.scrollHeight;
 
             try {
-                // Gera resposta e imagem
+                // Gera resposta
                 const persona = personaSelect.value === 'custom' 
                     ? customPersona.value 
                     : predefinedPersonas[personaSelect.value];
                 const fullPrompt = `${persona}\n\nUsuário: ${userMessage}\n\nResposta:`;
-                const response = await fetch(`https://text.pollinations.ai/${encodeURIComponent(fullPrompt)}`);
-                const responseText = response.ok ? await response.text() : "Desculpe, ocorreu um erro ao gerar a resposta.";
+                const responseText = await fetchResponse(fullPrompt);
+                
+                // Remove o indicador e adiciona a resposta
                 typingDiv.remove();
                 addMessage(responseText.trim(), false, true);
             } catch (error) {
