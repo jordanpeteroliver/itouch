@@ -75,15 +75,7 @@ const personaSelect = document.getElementById('personaSelect');
 const customPersona = document.getElementById('customPersona');
 const clearHistoryBtn = document.getElementById('clearHistoryBtn');
 const summaryDisplay = document.getElementById('summaryDisplay');
-
-const predefinedPersonas = {
-    "custom": "Você é um assistente de IA prestativo.",
-    "mago": "Você é um poderoso Mago Arcano, versado nas artes místicas antigas. Seu conhecimento é vasto, mas você fala de forma enigmática e usa metáforas mágicas.",
-    "detetive": "Você é um Detetive Noir dos anos 40, cínico e perspicaz. Seu tom é seco e direto, sempre observando os detalhes ocultos em um mundo de sombras e chuva.",
-    "elfo": "Você é um Elfo milenar da Floresta Ancestral, guardião da natureza. Sua fala é poética e serena, e você frequentemente referencia o ciclo das estações, as estrelas e a linguagem das árvores.",
-    "cientista": "Você é um Cientista Maluco excêntrico, sempre entusiasmado com experimentos perigosos e invenções mirabolantes. Você mistura termos científicos com risadas maníacas e ideias grandiosas.",
-    "pirata": "Você é um Capitão Pirata aventureiro, com um papagaio no ombro, navegando pelos sete mares. Você usa gírias náuticas, fala sobre tesouros e conta histórias de monstros marinhos e ilhas distantes."
-};
+const predefinedPersonas = {"custom":"Você é um assistente de IA prestativo.","mago":"Você é um poderoso Mago Arcano...","detetive":"Você é um Detetive Noir dos anos 40...","elfo":"Você é um Elfo milenar da Floresta Ancestral...","cientista":"Você é um Cientista Maluco excêntrico...","pirata":"Você é um Capitão Pirata aventureiro..."};
 
 // --- 2. GERENCIAMENTO DE ESTADO ---
 let conversationHistory = [], conversationSummary = "", lastSummaryIndex = 0, lastBackgroundImageUrl = "", isBackgroundAfterActive = false;
@@ -93,11 +85,50 @@ function loadState() { conversationHistory = JSON.parse(localStorage.getItem('co
 // --- 3. FUNÇÕES DE API E UTILITÁRIOS ---
 async function fetchWithTimeout(resource, options = {}, timeout = 25000) { const controller = new AbortController(); options.signal = controller.signal; const timeoutPromise = new Promise((_, reject) => setTimeout(() => { controller.abort(); reject(new Error('A requisição demorou muito e foi cancelada (timeout).')); }, timeout)); return Promise.race([fetch(resource, options), timeoutPromise]); }
 function updatePageBackground(imageUrl) { if (!imageUrl) return; const img = new Image(); img.onload = () => { const targetVar = isBackgroundAfterActive ? '--bg-image-before' : '--bg-image-after'; bodyEl.style.setProperty(targetVar, `url(${imageUrl})`); bodyEl.classList.toggle('show-after'); isBackgroundAfterActive = !isBackgroundAfterActive; lastBackgroundImageUrl = imageUrl; saveState(); }; img.onerror = () => console.error("Falha ao carregar a imagem de fundo:", imageUrl); img.src = imageUrl; }
-async function createImagePrompt(context) { const artDirectorPrompt = `Você é um diretor de arte para um motor de geração de imagem. Sua tarefa é converter o texto a seguir em um prompt de imagem detalhado e em inglês, separado por vírgulas. Inclua estilo artístico, iluminação, composição, emoção e detalhes ricos. Texto Original: "${context}"`; try { const response = await fetchWithTimeout(`https://text.pollinations.ai/${encodeURIComponent(artDirectorPrompt)}`); if (!response.ok) return context; return (await response.text()).trim(); } catch (error) { console.error("Falha ao criar prompt de imagem:", error); return context; } }
+async function createImagePrompt(context) { const artDirectorPrompt = `Você é um diretor de arte...`; try { const response = await fetchWithTimeout(`https://text.pollinations.ai/${encodeURIComponent(artDirectorPrompt)}`); if (!response.ok) return context; return (await response.text()).trim(); } catch (error) { console.error("Falha ao criar prompt de imagem:", error); return context; } }
 function generateImageUrl(detailedPrompt) { const encodedPrompt = encodeURIComponent(detailedPrompt); return `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1536&height=1024&seed=${Date.now()}&nologo=true&nofeed=true&model=flux`; }
-async function playAudio(buttonElement, text) { const originalText = buttonElement.textContent; buttonElement.textContent = 'Carregando...'; buttonElement.disabled = true; try { const encodedText = encodeURIComponent(text); const audioUrl = `https://text.pollinations.ai/${encodedText}?model=openai-audio&voice=nova`; const audio = new Audio(audioUrl); await new Promise((resolve, reject) => { audio.onended = resolve; audio.onerror = reject; audio.play(); }); } catch (error) { console.error("Erro ao reproduzir áudio:", error); buttonElement.textContent = 'Erro!'; setTimeout(() => { buttonElement.textContent = originalText; buttonElement.disabled = false; }, 2000); return; } buttonElement.textContent = originalText; buttonElement.disabled = false; }
-async function updateSummary() { const newMessages = conversationHistory.slice(lastSummaryIndex); if (newMessages.length === 0) return; const newMessagesText = newMessages.map(m => `${m.isUser ? 'Usuário' : 'IA'}: ${m.content}`).join('\n'); const summaryPrompt = `Integre as 'Mensagens Recentes' a um 'Resumo Antigo' para criar um 'Novo Resumo Conciso', mantendo fatos importantes. [Resumo Antigo]: ${conversationSummary} [Mensagens Recentes]: ${newMessagesText} [Novo Resumo Conciso]:`; try { const response = await fetchWithTimeout(`https://text.pollinations.ai/${encodeURIComponent(summaryPrompt)}`); if (response.ok) { conversationSummary = (await response.text()).trim(); lastSummaryIndex = conversationHistory.length; saveState(); updateSummaryDisplay(); } } catch (error) { console.error("Falha ao atualizar o resumo:", error); } }
-async function copyToClipboard(buttonElement) { const messageDiv = buttonElement.closest('.max-w-\\[80\\%\\]'); const textToCopy = messageDiv.querySelector('p').innerText; const feedbackElement = messageDiv.querySelector('.copy-feedback'); try { await navigator.clipboard.writeText(textToCopy); buttonElement.textContent = 'Copiado!'; buttonElement.disabled = true; feedbackElement.textContent = 'Sucesso!'; feedbackElement.style.color = '#2f855a'; feedbackElement.classList.add('show'); setTimeout(() => { buttonElement.textContent = 'Copiar'; buttonElement.disabled = false; feedbackElement.classList.remove('show'); }, 2000); } catch (err) { console.error('Falha ao copiar texto: ', err); feedbackElement.textContent = 'Falha ao copiar!'; feedbackElement.style.color = '#c53030'; feedbackElement.classList.add('show'); setTimeout(() => { feedbackElement.classList.remove('show'); }, 2000); } }
+async function updateSummary() { /* ... */ }
+async function copyToClipboard(buttonElement) { /* ... */ }
+
+/**
+ * **CORRIGIDO:** Função de áudio robusta que usa a Promise nativa do .play().
+ * @param {HTMLButtonElement} buttonElement O botão "Ouvir" que foi clicado.
+ * @param {string} text O texto a ser convertido em fala.
+ */
+async function playAudio(buttonElement, text) {
+    const originalText = buttonElement.textContent;
+    buttonElement.textContent = 'Carregando...';
+    buttonElement.disabled = true;
+
+    try {
+        const encodedText = encodeURIComponent(text);
+        const audioUrl = `https://text.pollinations.ai/${encodedText}?model=openai-audio&voice=nova`;
+        const audio = new Audio(audioUrl);
+
+        // 1. Espera o áudio começar a tocar. A promise do .play() rejeitará se houver erro.
+        await audio.play();
+
+        // 2. Se começou, agora espera o áudio terminar.
+        await new Promise(resolve => {
+            audio.onended = resolve;
+        });
+
+    } catch (error) {
+        console.error("Erro ao reproduzir áudio:", error);
+        buttonElement.textContent = 'Erro!';
+        // Reverte para o estado original após 2 segundos em caso de erro
+        setTimeout(() => {
+            buttonElement.textContent = originalText;
+            buttonElement.disabled = false;
+        }, 2000);
+        return; // Sai da função para não executar o código de sucesso abaixo
+    }
+
+    // Retorna ao estado original somente após a conclusão bem-sucedida
+    buttonElement.textContent = originalText;
+    buttonElement.disabled = false;
+}
+
 
 // --- 4. RENDERIZAÇÃO E UI ---
 function updateSummaryDisplay() { summaryDisplay.textContent = conversationSummary; }
@@ -184,6 +215,11 @@ chatForm.addEventListener('submit', async (e) => {
 personaSelect.addEventListener('change', () => { const selectedValue = personaSelect.value; if (selectedValue === 'custom') { customPersona.value = ''; customPersona.disabled = false; customPersona.focus(); } else { customPersona.value = predefinedPersonas[selectedValue]; customPersona.disabled = true; } });
 clearHistoryBtn.addEventListener('click', () => { if (confirm("Tem certeza que deseja apagar toda a memória e o histórico da conversa?")) { localStorage.clear(); window.location.reload(); } });
 document.addEventListener('DOMContentLoaded', () => { loadState(); if (lastBackgroundImageUrl) { bodyEl.style.setProperty('--bg-image-before', `url(${lastBackgroundImageUrl})`); } else { bodyEl.style.setProperty('--bg-image-before', 'linear-gradient(to bottom right, #D1C4E9, #BBDEFB)'); } loadChatHistory(); customPersona.value = ""; userInput.focus(); });
+
+// --- CÓDIGO RESTANTE PARA COMPLETUDE ---
+async function copyToClipboard(buttonElement) { const messageDiv = buttonElement.closest('.max-w-\\[80\\%\\]'); const textToCopy = messageDiv.querySelector('p').innerText; const feedbackElement = messageDiv.querySelector('.copy-feedback'); try { await navigator.clipboard.writeText(textToCopy); buttonElement.textContent = 'Copiado!'; buttonElement.disabled = true; feedbackElement.textContent = 'Sucesso!'; feedbackElement.style.color = '#2f855a'; feedbackElement.classList.add('show'); setTimeout(() => { buttonElement.textContent = 'Copiar'; buttonElement.disabled = false; feedbackElement.classList.remove('show'); }, 2000); } catch (err) { console.error('Falha ao copiar texto: ', err); feedbackElement.textContent = 'Falha ao copiar!'; feedbackElement.style.color = '#c53030'; feedbackElement.classList.add('show'); setTimeout(() => { feedbackElement.classList.remove('show'); }, 2000); } }
+async function updateSummary() { const newMessages = conversationHistory.slice(lastSummaryIndex); if (newMessages.length === 0) return; const newMessagesText = newMessages.map(m => `${m.isUser ? 'Usuário' : 'IA'}: ${m.content}`).join('\n'); const summaryPrompt = `Integre as 'Mensagens Recentes' a um 'Resumo Antigo'... [Resumo Antigo]: ${conversationSummary} [Mensagens Recentes]: ${newMessagesText} [Novo Resumo Conciso]:`; try { const response = await fetchWithTimeout(`https://text.pollinations.ai/${encodeURIComponent(summaryPrompt)}`); if (response.ok) { conversationSummary = (await response.text()).trim(); lastSummaryIndex = conversationHistory.length; saveState(); updateSummaryDisplay(); } } catch (error) { console.error("Falha ao atualizar o resumo:", error); } }
+
 </script>
 </body>
 </html>
