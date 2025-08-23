@@ -45,170 +45,335 @@
             <p class="text-gray-200 font-semibold drop-shadow-md">Com cenário dinâmico, memória e copiar/colar.</p>
         </header>
         <div class="bg-white/80 backdrop-blur-sm rounded-lg shadow-lg p-4 mb-4">
-             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-center"><div><label class="block text-gray-700 font-bold mb-2">Persona Predefinida</label><select id="personaSelect" class="w-full p-2 border rounded"><option value="custom">Personalizada</option><option value="mago">Mago Arcano</option><option value="detetive">Detetive Noir</option><option value="elfo">Elfo da Floresta</option><option value="cientista">Cientista Maluco</option><option value="pirata">Capitão Pirata</option></select></div><div><label class="block text-gray-700 font-bold mb-2">Personalização Livre</label><textarea id="customPersona" class="w-full p-2 border rounded h-20 resize-none" placeholder="Descreva a personalidade do seu personagem..."></textarea></div></div><div class="flex justify-between items-center mt-4"><details><summary class="font-bold text-gray-700 cursor-pointer text-sm">Ver Memória de Longo Prazo</summary><p id="summaryDisplay" class="text-xs text-gray-600 mt-2 p-2 bg-gray-50 rounded italic"></p></details><button id="clearHistoryBtn" class="bg-red-500 text-white px-3 py-1 rounded text-sm hover:bg-red-600">Limpar Memória</button></div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+                <div>
+                    <label class="block text-gray-700 font-bold mb-2">Persona Predefinida</label>
+                    <select id="personaSelect" class="w-full p-2 border rounded">
+                        <option value="custom">Personalizada</option>
+                        <option value="mago">Mago Arcano</option>
+                        <option value="detetive">Detetive Noir</option>
+                        <option value="elfo">Elfo da Floresta</option>
+                        <option value="cientista">Cientista Maluco</option>
+                        <option value="pirata">Capitão Pirata</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-gray-700 font-bold mb-2">Personalização Livre</label>
+                    <textarea id="customPersona" class="w-full p-2 border rounded h-20 resize-none" placeholder="Descreva a personalidade do seu personagem..."></textarea>
+                </div>
+            </div>
+            <div class="flex justify-between items-center mt-4">
+                <details>
+                    <summary class="font-bold text-gray-700 cursor-pointer text-sm">Ver Memória de Longo Prazo</summary>
+                    <p id="summaryDisplay" class="text-xs text-gray-600 mt-2 p-2 bg-gray-50 rounded italic"></p>
+                </details>
+                <button id="clearHistoryBtn" class="bg-red-500 text-white px-3 py-1 rounded text-sm hover:bg-red-600">Limpar Memória</button>
+            </div>
         </div>
         <div class="bg-white/80 backdrop-blur-sm rounded-lg shadow-lg chat-container">
             <div id="messageHistory" class="message-container p-4 overflow-y-auto space-y-4"></div>
             <div class="border-t p-4 bg-white/50">
-                <form id="chatForm" class="flex gap-2"><input type="text" id="userInput" class="flex-1 p-2 border rounded" placeholder="Digite sua mensagem..." required autocomplete="off"><button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Enviar</button></form>
+                <form id="chatForm" class="flex gap-2">
+                    <input type="text" id="userInput" class="flex-1 p-2 border rounded" placeholder="Digite sua mensagem..." required autocomplete="off">
+                    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Enviar</button>
+                </form>
             </div>
         </div>
     </div>
 
-<script>
-// --- 1. CONFIGURAÇÕES E ELEMENTOS ---
-const bodyEl = document.querySelector('body');
-const chatForm = document.getElementById('chatForm');
-const userInput = document.getElementById('userInput');
-const messageHistory = document.getElementById('messageHistory');
-const personaSelect = document.getElementById('personaSelect');
-const customPersona = document.getElementById('customPersona');
-const clearHistoryBtn = document.getElementById('clearHistoryBtn');
-const summaryDisplay = document.getElementById('summaryDisplay');
-const APP_REFERRER = "https://jordanpeteroliver.github.io/itouch/";
-const predefinedPersonas = { "custom": "Você é um assistente de IA prestativo.", "mago": "Você é um poderoso Mago Arcano, versado nas artes místicas antigas. Seu conhecimento é vasto, mas você fala de forma enigmática e usa metáforas mágicas.", "detetive": "Você é um Detetive Noir dos anos 40, cínico e perspicaz. Seu tom é seco e direto, sempre observando os detalhes ocultos em um mundo de sombras e chuva.", "elfo": "Você é um Elfo milenar da Floresta Ancestral, guardião da natureza. Sua fala é poética e serena, e você frequentemente referencia o ciclo das estações, as estrelas e a linguagem das árvores.", "cientista": "Você é um Cientista Maluco excêntrico, sempre entusiasmado com experimentos perigosos e invenções mirabolantes. Você mistura termos científicos com risadas maníacas e ideias grandiosas.", "pirata": "Você é um Capitão Pirata aventureiro, com um papagaio no ombro, navegando pelos sete mares. Você usa gírias náuticas, fala sobre tesouros e conta histórias de monstros marinhos e ilhas distantes." };
+    <script>
+        // --- 1. CONFIGURAÇÕES E ELEMENTOS ---
+        const bodyEl = document.querySelector('body');
+        const chatForm = document.getElementById('chatForm');
+        const userInput = document.getElementById('userInput');
+        const messageHistory = document.getElementById('messageHistory');
+        const personaSelect = document.getElementById('personaSelect');
+        const customPersona = document.getElementById('customPersona');
+        const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+        const summaryDisplay = document.getElementById('summaryDisplay');
+        const APP_REFERRER = "https://jordanpeteroliver.github.io/itouch/";
+        const predefinedPersonas = {
+            "custom": "Você é um assistente de IA prestativo.",
+            "mago": "Você é um poderoso Mago Arcano, versado nas artes místicas antigas. Seu conhecimento é vasto, mas você fala de forma enigmática e usa metáforas mágicas.",
+            "detetive": "Você é um Detetive Noir dos anos 40, cínico e perspicaz. Seu tom é seco e direto, sempre observando os detalhes ocultos em um mundo de sombras e chuva.",
+            "elfo": "Você é um Elfo milenar da Floresta Ancestral, guardião da natureza. Sua fala é poética e serena, e você frequentemente referencia o ciclo das estações, as estrelas e a linguagem das árvores.",
+            "cientista": "Você é um Cientista Maluco excêntrico, sempre entusiasmado com experimentos perigosos e invenções mirabolantes. Você mistura termos científicos com risadas maníacas e ideias grandiosas.",
+            "pirata": "Você é um Capitão Pirata aventureiro, com um papagaio no ombro, navegando pelos sete mares. Você usa gírias náuticas, fala sobre tesouros e conta histórias de monstros marinhos e ilhas distantes."
+        };
 
-// --- 2. GERENCIAMENTO DE ESTADO ---
-let conversationHistory = [], conversationSummary = "", lastSummaryIndex = 0, lastBackgroundImageUrl = "", isBackgroundAfterActive = false;
-function saveState() { localStorage.setItem('conversationHistory', JSON.stringify(conversationHistory)); localStorage.setItem('conversationSummary', conversationSummary); localStorage.setItem('lastSummaryIndex', lastSummaryIndex.toString()); localStorage.setItem('lastBackgroundImageUrl', lastBackgroundImageUrl); }
-function loadState() { conversationHistory = JSON.parse(localStorage.getItem('conversationHistory')) || []; conversationSummary = localStorage.getItem('conversationSummary') || "A conversa está apenas começando."; lastSummaryIndex = parseInt(localStorage.getItem('lastSummaryIndex')) || 0; lastBackgroundImageUrl = localStorage.getItem('lastBackgroundImageUrl') || ""; updateSummaryDisplay(); }
-
-// --- 3. FUNÇÕES DE API E UTILITÁRIOS ---
-async function fetchWithTimeout(resource, options = {}, timeout = 25000) { const controller = new AbortController(); options.signal = controller.signal; const timeoutPromise = new Promise((_, reject) => setTimeout(() => { controller.abort(); reject(new Error('A requisição demorou muito e foi cancelada (timeout).')); }, timeout)); return Promise.race([fetch(resource, options), timeoutPromise]); }
-function updatePageBackground(imageUrl) { if (!imageUrl) return; const img = new Image(); img.onload = () => { const targetVar = isBackgroundAfterActive ? '--bg-image-before' : '--bg-image-after'; bodyEl.style.setProperty(targetVar, `url(${imageUrl})`); bodyEl.classList.toggle('show-after'); isBackgroundAfterActive = !isBackgroundAfterActive; lastBackgroundImageUrl = imageUrl; saveState(); }; img.onerror = () => console.error("Falha ao carregar a imagem de fundo:", imageUrl); img.src = imageUrl; }
-async function createImagePrompt(context) { const artDirectorPrompt = `Você é um diretor de arte para um motor de geração de imagem. Sua tarefa é converter o texto a seguir em um prompt de imagem detalhado e em inglês, separado por vírgulas. Inclua estilo artístico, iluminação, composição, emoção e detalhes ricos. Texto Original: "${context}"`; try { const textParams = new URLSearchParams({ referrer: APP_REFERRER }); const url = `https://text.pollinations.ai/${encodeURIComponent(artDirectorPrompt)}?${textParams.toString()}`; const response = await fetchWithTimeout(url); if (!response.ok) return context; return (await response.text()).trim(); } catch (error) { console.error("Falha ao criar prompt de imagem:", error); return context; } }
-function generateImageUrl(detailedPrompt) { const encodedPrompt = encodeURIComponent(detailedPrompt); const params = new URLSearchParams({ width: 1536, height: 1024, seed: Date.now(), model: 'flux', nologo: 'true', private: 'true', referrer: APP_REFERRER }); return `https://image.pollinations.ai/prompt/${encodedPrompt}?${params.toString()}`; }
-async function updateSummary() { const newMessages = conversationHistory.slice(lastSummaryIndex); if (newMessages.length === 0) return; const newMessagesText = newMessages.map(m => `${m.isUser ? 'Usuário' : 'IA'}: ${m.content}`).join('\n'); const summaryPrompt = `Integre as 'Mensagens Recentes' a um 'Resumo Antigo' para criar um 'Novo Resumo Conciso', mantendo fatos importantes. [Resumo Antigo]: ${conversationSummary} [Mensagens Recentes]: ${newMessagesText} [Novo Resumo Conciso]:`; try { const textParams = new URLSearchParams({ referrer: APP_REFERRER }); const url = `https://text.pollinations.ai/${encodeURIComponent(summaryPrompt)}?${textParams.toString()}`; const response = await fetchWithTimeout(url); if (response.ok) { conversationSummary = (await response.text()).trim(); lastSummaryIndex = conversationHistory.length; saveState(); updateSummaryDisplay(); } } catch (error) { console.error("Falha ao atualizar o resumo:", error); } }
-async function copyToClipboard(buttonElement) { const messageDiv = buttonElement.closest('.max-w-\\[80\\%\\]'); const textToCopy = messageDiv.querySelector('p').innerText; const feedbackElement = messageDiv.querySelector('.copy-feedback'); try { await navigator.clipboard.writeText(textToCopy); buttonElement.textContent = 'Copiado!'; buttonElement.disabled = true; feedbackElement.textContent = 'Sucesso!'; feedbackElement.style.color = '#2f855a'; feedbackElement.classList.add('show'); setTimeout(() => { buttonElement.textContent = 'Copiar'; buttonElement.disabled = false; feedbackElement.classList.remove('show'); }, 2000); } catch (err) { console.error('Falha ao copiar texto: ', err); feedbackElement.textContent = 'Falha ao copiar!'; feedbackElement.style.color = '#c53030'; feedbackElement.classList.add('show'); setTimeout(() => { feedbackElement.classList.remove('show'); }, 2000); } }
-
-/**
- * **CORRIGIDO:** Função de áudio robusta que pré-carrega o áudio para tratar erros.
- * @param {HTMLButtonElement} buttonElement O botão "Ouvir" que foi clicado.
- * @param {string} text O texto a ser convertido em fala.
- */
-async function playAudio(buttonElement, text) {
-    const originalText = buttonElement.textContent;
-    buttonElement.textContent = 'Carregando...';
-    buttonElement.disabled = true;
-    let localAudioUrl = null;
-
-    try {
-        const encodedText = encodeURIComponent(text);
-        const audioUrl = `https://text.pollinations.ai/${encodedText}?model=openai-audio&voice=nova&referrer=${APP_REFERRER}`;
-        
-        // 1. Pré-carrega o áudio e verifica se a resposta é válida
-        const response = await fetchWithTimeout(audioUrl);
-        if (!response.ok || !response.headers.get('Content-Type')?.includes('audio/mpeg')) {
-            throw new Error('A API não retornou um arquivo de áudio válido.');
+        // --- 2. GERENCIAMENTO DE ESTADO ---
+        let conversationHistory = [], conversationSummary = "", lastSummaryIndex = 0, lastBackgroundImageUrl = "", isBackgroundAfterActive = false;
+        function saveState() {
+            localStorage.setItem('conversationHistory', JSON.stringify(conversationHistory));
+            localStorage.setItem('conversationSummary', conversationSummary);
+            localStorage.setItem('lastSummaryIndex', lastSummaryIndex.toString());
+            localStorage.setItem('lastBackgroundImageUrl', lastBackgroundImageUrl);
+        }
+        function loadState() {
+            conversationHistory = JSON.parse(localStorage.getItem('conversationHistory')) || [];
+            conversationSummary = localStorage.getItem('conversationSummary') || "A conversa está apenas começando.";
+            lastSummaryIndex = parseInt(localStorage.getItem('lastSummaryIndex')) || 0;
+            lastBackgroundImageUrl = localStorage.getItem('lastBackgroundImageUrl') || "";
+            updateSummaryDisplay();
         }
 
-        // 2. Cria uma URL local para o áudio, que é mais estável para tocar
-        const blob = await response.blob();
-        localAudioUrl = URL.createObjectURL(blob);
-        const audio = new Audio(localAudioUrl);
+        // --- 3. FUNÇÕES DE API E UTILITÁRIOS ---
+        async function fetchWithTimeout(resource, options = {}, timeout = 25000) {
+            const controller = new AbortController();
+            options.signal = controller.signal;
+            const timeoutPromise = new Promise((_, reject) => setTimeout(() => {
+                controller.abort();
+                reject(new Error('A requisição demorou muito e foi cancelada (timeout).'));
+            }, timeout));
+            return Promise.race([fetch(resource, options), timeoutPromise]);
+        }
+        function updatePageBackground(imageUrl) {
+            if (!imageUrl) return;
+            const img = new Image();
+            img.onload = () => {
+                const targetVar = isBackgroundAfterActive ? '--bg-image-before' : '--bg-image-after';
+                bodyEl.style.setProperty(targetVar, `url(${imageUrl})`);
+                bodyEl.classList.toggle('show-after');
+                isBackgroundAfterActive = !isBackgroundAfterActive;
+                lastBackgroundImageUrl = imageUrl;
+                saveState();
+            };
+            img.onerror = () => console.error("Falha ao carregar a imagem de fundo:", imageUrl);
+            img.src = imageUrl;
+        }
+        async function createImagePrompt(context) {
+            const artDirectorPrompt = `Você é um diretor de arte para um motor de geração de imagem. Sua tarefa é converter o texto a seguir em um prompt de imagem detalhado e em inglês, separado por vírgulas. Inclua estilo artístico, iluminação, composição, emoção e detalhes ricos. Texto Original: "${context}"`;
+            try {
+                const textParams = new URLSearchParams({ referrer: APP_REFERRER });
+                const url = `https://text.pollinations.ai/${encodeURIComponent(artDirectorPrompt)}?${textParams.toString()}`;
+                const response = await fetchWithTimeout(url);
+                if (!response.ok) return context;
+                return (await response.text()).trim();
+            } catch (error) {
+                console.error("Falha ao criar prompt de imagem:", error);
+                return context;
+            }
+        }
+        function generateImageUrl(detailedPrompt) {
+            const encodedPrompt = encodeURIComponent(detailedPrompt);
+            const params = new URLSearchParams({ width: 1536, height: 1024, seed: Date.now(), model: 'flux', nologo: 'true', private: 'true', referrer: APP_REFERRER });
+            return `https://image.pollinations.ai/prompt/${encodedPrompt}?${params.toString()}`;
+        }
+        async function updateSummary() {
+            const newMessages = conversationHistory.slice(lastSummaryIndex);
+            if (newMessages.length === 0) return;
+            const newMessagesText = newMessages.map(m => `${m.isUser ? 'Usuário' : 'IA'}: ${m.content}`).join('\n');
+            const summaryPrompt = `Integre as 'Mensagens Recentes' a um 'Resumo Antigo' para criar um 'Novo Resumo Conciso', mantendo fatos importantes. [Resumo Antigo]: ${conversationSummary} [Mensagens Recentes]: ${newMessagesText} [Novo Resumo Conciso]:`;
+            try {
+                const textParams = new URLSearchParams({ referrer: APP_REFERRER });
+                const url = `https://text.pollinations.ai/${encodeURIComponent(summaryPrompt)}?${textParams.toString()}`;
+                const response = await fetchWithTimeout(url);
+                if (response.ok) {
+                    conversationSummary = (await response.text()).trim();
+                    lastSummaryIndex = conversationHistory.length;
+                    saveState();
+                    updateSummaryDisplay();
+                }
+            } catch (error) {
+                console.error("Falha ao atualizar o resumo:", error);
+            }
+        }
+        async function copyToClipboard(buttonElement) {
+            const messageDiv = buttonElement.closest('.max-w-\\[80\\%\\]');
+            const textToCopy = messageDiv.querySelector('p').innerText;
+            const feedbackElement = messageDiv.querySelector('.copy-feedback');
+            try {
+                await navigator.clipboard.writeText(textToCopy);
+                buttonElement.textContent = 'Copiado!';
+                buttonElement.disabled = true;
+                feedbackElement.textContent = 'Sucesso!';
+                feedbackElement.style.color = '#2f855a';
+                feedbackElement.classList.add('show');
+                setTimeout(() => {
+                    buttonElement.textContent = 'Copiar';
+                    buttonElement.disabled = false;
+                    feedbackElement.classList.remove('show');
+                }, 2000);
+            } catch (err) {
+                console.error('Falha ao copiar texto: ', err);
+                feedbackElement.textContent = 'Falha ao copiar!';
+                feedbackElement.style.color = '#c53030';
+                feedbackElement.classList.add('show');
+                setTimeout(() => {
+                    feedbackElement.classList.remove('show');
+                }, 2000);
+            }
+        }
 
-        // 3. Toca o áudio e espera ele terminar
-        await new Promise((resolve, reject) => {
-            audio.onended = resolve;
-            audio.onerror = reject;
-            audio.play().catch(reject); // Captura erros iniciais de reprodução
-        });
+        /**
+         * Função robusta para reproduzir áudio a partir de texto usando a API Pollinations AI.
+         * @param {HTMLButtonElement} buttonElement O botão "Ouvir" que foi clicado.
+         * @param {string} text O texto a ser convertido em fala.
+         */
+        async function playAudio(buttonElement, text) {
+            const originalText = buttonElement.textContent;
+            buttonElement.textContent = 'Carregando...';
+            buttonElement.disabled = true;
+            let localAudioUrl = null;
 
-    } catch (error) {
-        console.error("Erro ao reproduzir áudio:", error);
-        buttonElement.textContent = 'Erro!';
-        setTimeout(() => {
+            try {
+                const encodedText = encodeURIComponent(text);
+                const token = "qyLRDoNywRpGm4EK"; // Token temporário fornecido
+                const audioUrl = `https://text.pollinations.ai/${encodedText}?model=openai-audio&voice=nova&token=${token}&referrer=${encodeURIComponent(APP_REFERRER)}`;
+                
+                // 1. Faz a requisição com timeout
+                const response = await fetchWithTimeout(audioUrl, {}, 30000); // Aumentado para 30s
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Erro na API: ${response.status} - ${errorText}`);
+                }
+
+                // 2. Verifica se é um arquivo de áudio (mais flexível)
+                const contentType = response.headers.get('Content-Type') || '';
+                if (!contentType.includes('audio/')) {
+                    throw new Error('A API não retornou um arquivo de áudio válido.');
+                }
+
+                // 3. Cria URL local para o áudio
+                const blob = await response.blob();
+                localAudioUrl = URL.createObjectURL(blob);
+                const audio = new Audio(localAudioUrl);
+
+                // 4. Garante que o áudio só toca após interação do usuário
+                await new Promise((resolve, reject) => {
+                    audio.onended = () => resolve();
+                    audio.onerror = () => reject(new Error('Erro ao reproduzir o áudio.'));
+                    audio.play().catch(err => reject(new Error(`Falha na reprodução: ${err.message}`)));
+                });
+
+            } catch (error) {
+                console.error("Erro ao reproduzir áudio:", error);
+                buttonElement.textContent = 'Erro!';
+                const feedbackElement = buttonElement.closest('.max-w-\\[80\\%\\]').querySelector('.copy-feedback');
+                if (feedbackElement) {
+                    feedbackElement.textContent = `Erro: ${error.message}`;
+                    feedbackElement.style.color = '#c53030';
+                    feedbackElement.classList.add('show');
+                    setTimeout(() => feedbackElement.classList.remove('show'), 3000);
+                }
+                setTimeout(() => {
+                    buttonElement.textContent = originalText;
+                    buttonElement.disabled = false;
+                }, 2000);
+                return;
+            } finally {
+                if (localAudioUrl) {
+                    URL.revokeObjectURL(localAudioUrl);
+                }
+            }
+
+            // 5. Retorna ao estado original
             buttonElement.textContent = originalText;
             buttonElement.disabled = false;
-        }, 2000);
-        return;
-    } finally {
-        // 4. Limpa a URL local da memória
-        if (localAudioUrl) {
-            URL.revokeObjectURL(localAudioUrl);
         }
-    }
 
-    // Retorna ao estado original se tudo deu certo
-    buttonElement.textContent = originalText;
-    buttonElement.disabled = false;
-}
+        // --- 4. RENDERIZAÇÃO E UI ---
+        function updateSummaryDisplay() { summaryDisplay.textContent = conversationSummary; }
+        function renderMessage(messageObject) {
+            const { content, isUser, generateImage, imagePrompt, imageUrl } = messageObject;
+            const div = document.createElement('div');
+            div.className = `flex flex-col ${isUser ? 'items-end' : 'items-start'}`;
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `max-w-[80%] ${isUser ? 'bg-blue-600 text-white' : 'bg-gray-100/90'} rounded-lg p-3 mb-2 shadow`;
+            messageDiv.innerHTML = `<p>${content.replace(/\n/g, '<br>')}</p>`;
+            if (!isUser) {
+                const actionsContainer = document.createElement('div'); actionsContainer.className = "mt-3 flex items-center gap-4";
+                const audioButton = document.createElement('button'); audioButton.className = "text-blue-800 underline text-sm action-btn"; audioButton.textContent = "Ouvir"; audioButton.onclick = function() { playAudio(this, content); }; actionsContainer.appendChild(audioButton);
+                const copyButton = document.createElement('button'); copyButton.className = "copy-btn action-btn"; copyButton.textContent = "Copiar"; copyButton.onclick = function() { copyToClipboard(this); }; actionsContainer.appendChild(copyButton);
+                const feedbackSpan = document.createElement('span'); feedbackSpan.className = 'copy-feedback'; actionsContainer.appendChild(feedbackSpan);
+                messageDiv.appendChild(actionsContainer);
+            }
+            div.appendChild(messageDiv);
+            if (!isUser && generateImage && imagePrompt && imageUrl) {
+                const imageContainer = document.createElement('div'); imageContainer.className = 'max-w-full mt-2 image-fade';
+                imageContainer.innerHTML = `<img src="${imageUrl}" alt="Contexto visual da história" class="rounded-lg shadow-md border"><details class="text-xs text-black/80 mt-1 pl-1"><summary class="cursor-pointer font-semibold text-white drop-shadow">Ver prompt</summary><p class="italic p-1 bg-white/80 rounded">${imagePrompt}</p></details>`;
+                div.appendChild(imageContainer);
+            }
+            messageHistory.appendChild(div);
+            messageHistory.scrollTop = messageHistory.scrollHeight;
+        }
+        function loadChatHistory() { 
+            messageHistory.innerHTML = `<div class="text-center text-white font-semibold drop-shadow-md">Início da conversa</div>`; 
+            conversationHistory.forEach(msg => renderMessage(msg)); 
+        }
 
+        // --- 5. LÓGICA PRINCIPAL DO CHAT ---
+        chatForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const userMessageContent = userInput.value.trim();
+            if (!userMessageContent) return;
+            const userMessageObject = { content: userMessageContent, isUser: true };
+            conversationHistory.push(userMessageObject);
+            renderMessage(userMessageObject);
+            userInput.value = '';
+            if (conversationHistory.length - lastSummaryIndex >= 8) { setTimeout(updateSummary, 1000); }
+            const typingDiv = document.createElement('div');
+            typingDiv.id = 'typingIndicator';
+            typingDiv.className = 'flex justify-start';
+            typingDiv.innerHTML = `<div class="bg-gray-100 rounded-lg p-3 shadow"><p id="typingText" class="typing-animation">Gerando resposta...</p></div>`;
+            messageHistory.appendChild(typingDiv);
+            messageHistory.scrollTop = messageHistory.scrollHeight;
+            try {
+                const persona = personaSelect.value === 'custom' ? customPersona.value : predefinedPersonas[personaSelect.value];
+                const recentHistoryText = conversationHistory.slice(-6).map(m => `${m.isUser ? 'Usuário' : 'IA'}: ${m.content}`).join('\n');
+                const promptComContexto = `Resumo da Conversa:\n${conversationSummary}\n\nHistórico Recente:\n${recentHistoryText}\n\nUsuário: ${userMessageContent}\n\nIA:`;
+                const textParams = new URLSearchParams({ system: persona, referrer: APP_REFERRER });
+                const textUrl = `https://text.pollinations.ai/${encodeURIComponent(promptComContexto)}?${textParams.toString()}`;
+                const response = await fetchWithTimeout(textUrl);
+                if (!response.ok) throw new Error(`API de texto retornou erro: ${response.statusText}`);
+                const responseText = (await response.text()).trim();
+                document.getElementById('typingText').textContent = "Criando prompt de imagem...";
+                const detailedImagePrompt = await createImagePrompt(responseText);
+                document.getElementById('typingText').textContent = "Gerando imagem...";
+                const imageUrl = generateImageUrl(detailedImagePrompt);
+                updatePageBackground(imageUrl);
+                const aiMessageObject = { content: responseText, isUser: false, generateImage: true, imagePrompt: detailedImagePrompt, imageUrl: imageUrl };
+                conversationHistory.push(aiMessageObject);
+                renderMessage(aiMessageObject);
+            } catch (error) {
+                console.error("Erro no fluxo do chat:", error);
+                renderMessage({ content: `Desculpe, ocorreu um erro: ${error.message}.`, isUser: false });
+            } finally {
+                const typingIndicator = document.getElementById('typingIndicator');
+                if (typingIndicator) typingIndicator.remove();
+                saveState();
+            }
+        });
 
-// --- 4. RENDERIZAÇÃO E UI ---
-function updateSummaryDisplay() { summaryDisplay.textContent = conversationSummary; }
-function renderMessage(messageObject) {
-    const { content, isUser, generateImage, imagePrompt, imageUrl } = messageObject;
-    const div = document.createElement('div');
-    div.className = `flex flex-col ${isUser ? 'items-end' : 'items-start'}`;
-    const messageDiv = document.createElement('div');
-    messageDiv.className = `max-w-[80%] ${isUser ? 'bg-blue-600 text-white' : 'bg-gray-100/90'} rounded-lg p-3 mb-2 shadow`;
-    messageDiv.innerHTML = `<p>${content.replace(/\n/g, '<br>')}</p>`;
-    if (!isUser) {
-        const actionsContainer = document.createElement('div'); actionsContainer.className = "mt-3 flex items-center gap-4";
-        const audioButton = document.createElement('button'); audioButton.className = "text-blue-800 underline text-sm action-btn"; audioButton.textContent = "Ouvir"; audioButton.onclick = function() { playAudio(this, content); }; actionsContainer.appendChild(audioButton);
-        const copyButton = document.createElement('button'); copyButton.className = "copy-btn action-btn"; copyButton.textContent = "Copiar"; copyButton.onclick = function() { copyToClipboard(this); }; actionsContainer.appendChild(copyButton);
-        const feedbackSpan = document.createElement('span'); feedbackSpan.className = 'copy-feedback'; actionsContainer.appendChild(feedbackSpan);
-        messageDiv.appendChild(actionsContainer);
-    }
-    div.appendChild(messageDiv);
-    if (!isUser && generateImage && imagePrompt && imageUrl) {
-        const imageContainer = document.createElement('div'); imageContainer.className = 'max-w-full mt-2 image-fade';
-        imageContainer.innerHTML = `<img src="${imageUrl}" alt="Contexto visual da história" class="rounded-lg shadow-md border"><details class="text-xs text-black/80 mt-1 pl-1"><summary class="cursor-pointer font-semibold text-white drop-shadow">Ver prompt</summary><p class="italic p-1 bg-white/80 rounded">${imagePrompt}</p></details>`;
-        div.appendChild(imageContainer);
-    }
-    messageHistory.appendChild(div);
-    messageHistory.scrollTop = messageHistory.scrollHeight;
-}
-function loadChatHistory() { messageHistory.innerHTML = `<div class="text-center text-white font-semibold drop-shadow-md">Início da conversa</div>`; conversationHistory.forEach(msg => renderMessage(msg)); }
-
-// --- 5. LÓGICA PRINCIPAL DO CHAT ---
-chatForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const userMessageContent = userInput.value.trim();
-    if (!userMessageContent) return;
-    const userMessageObject = { content: userMessageContent, isUser: true };
-    conversationHistory.push(userMessageObject);
-    renderMessage(userMessageObject);
-    userInput.value = '';
-    if (conversationHistory.length - lastSummaryIndex >= 8) { setTimeout(updateSummary, 1000); }
-    const typingDiv = document.createElement('div');
-    typingDiv.id = 'typingIndicator';
-    typingDiv.className = 'flex justify-start';
-    typingDiv.innerHTML = `<div class="bg-gray-100 rounded-lg p-3 shadow"><p id="typingText" class="typing-animation">Gerando resposta...</p></div>`;
-    messageHistory.appendChild(typingDiv);
-    messageHistory.scrollTop = messageHistory.scrollHeight;
-    try {
-        const persona = personaSelect.value === 'custom' ? customPersona.value : predefinedPersonas[personaSelect.value];
-        const recentHistoryText = conversationHistory.slice(-6).map(m => `${m.isUser ? 'Usuário' : 'IA'}: ${m.content}`).join('\n');
-        const promptComContexto = `Resumo da Conversa:\n${conversationSummary}\n\nHistórico Recente:\n${recentHistoryText}\n\nUsuário: ${userMessageContent}\n\nIA:`;
-        const textParams = new URLSearchParams({ system: persona, referrer: APP_REFERRER });
-        const textUrl = `https://text.pollinations.ai/${encodeURIComponent(promptComContexto)}?${textParams.toString()}`;
-        const response = await fetchWithTimeout(textUrl);
-        if (!response.ok) throw new Error(`API de texto retornou erro: ${response.statusText}`);
-        const responseText = (await response.text()).trim();
-        document.getElementById('typingText').textContent = "Criando prompt de imagem...";
-        const detailedImagePrompt = await createImagePrompt(responseText);
-        document.getElementById('typingText').textContent = "Gerando imagem...";
-        const imageUrl = generateImageUrl(detailedImagePrompt);
-        updatePageBackground(imageUrl);
-        const aiMessageObject = { content: responseText, isUser: false, generateImage: true, imagePrompt: detailedImagePrompt, imageUrl: imageUrl };
-        conversationHistory.push(aiMessageObject);
-        renderMessage(aiMessageObject);
-    } catch (error) {
-        console.error("Erro no fluxo do chat:", error);
-        renderMessage({ content: `Desculpe, ocorreu um erro: ${error.message}.`, isUser: false });
-    } finally {
-        const typingIndicator = document.getElementById('typingIndicator');
-        if (typingIndicator) typingIndicator.remove();
-        saveState();
-    }
-});
-
-// --- 6. INICIALIZAÇÃO E EVENTOS ---
-personaSelect.addEventListener('change', () => { const selectedValue = personaSelect.value; if (selectedValue === 'custom') { customPersona.value = ''; customPersona.disabled = false; customPersona.focus(); } else { customPersona.value = predefinedPersonas[selectedValue]; customPersona.disabled = true; } });
-clearHistoryBtn.addEventListener('click', () => { if (confirm("Tem certeza que deseja apagar toda a memória e o histórico da conversa?")) { localStorage.clear(); window.location.reload(); } });
-document.addEventListener('DOMContentLoaded', () => { loadState(); if (lastBackgroundImageUrl) { bodyEl.style.setProperty('--bg-image-before', `url(${lastBackgroundImageUrl})`); } else { bodyEl.style.setProperty('--bg-image-before', 'linear-gradient(to bottom right, #D1C4E9, #BBDEFB)'); } loadChatHistory(); customPersona.value = ""; userInput.focus(); });
-</script>
+        // --- 6. INICIALIZAÇÃO E EVENTOS ---
+        personaSelect.addEventListener('change', () => {
+            const selectedValue = personaSelect.value;
+            if (selectedValue === 'custom') {
+                customPersona.value = '';
+                customPersona.disabled = false;
+                customPersona.focus();
+            } else {
+                customPersona.value = predefinedPersonas[selectedValue];
+                customPersona.disabled = true;
+            }
+        });
+        clearHistoryBtn.addEventListener('click', () => {
+            if (confirm("Tem certeza que deseja apagar toda a memória e o histórico da conversa?")) {
+                localStorage.clear();
+                window.location.reload();
+            }
+        });
+        document.addEventListener('DOMContentLoaded', () => {
+            loadState();
+            if (lastBackgroundImageUrl) {
+                bodyEl.style.setProperty('--bg-image-before', `url(${lastBackgroundImageUrl})`);
+            } else {
+                bodyEl.style.setProperty('--bg-image-before', 'linear-gradient(to bottom right, #D1C4E9, #BBDEFB)');
+            }
+            loadChatHistory();
+            customPersona.value = "";
+            userInput.focus();
+        });
+    </script>
 </body>
 </html>
