@@ -78,9 +78,62 @@ async function fetchWithTimeout(resource, options = {}, timeout = 25000) { const
 function updatePageBackground(imageUrl) { if (!imageUrl) return; const img = new Image(); img.onload = () => { const targetVar = isBackgroundAfterActive ? '--bg-image-before' : '--bg-image-after'; bodyEl.style.setProperty(targetVar, `url(${imageUrl})`); bodyEl.classList.toggle('show-after'); isBackgroundAfterActive = !isBackgroundAfterActive; lastBackgroundImageUrl = imageUrl; saveState(); }; img.onerror = () => console.error("Falha ao carregar a imagem de fundo:", imageUrl); img.src = imageUrl; }
 async function createImagePrompt(context) { const artDirectorPrompt = `Você é um diretor de arte para um motor de geração de imagem. Sua tarefa é converter o texto a seguir em um prompt de imagem detalhado e em inglês, separado por vírgulas. Inclua estilo artístico, iluminação, composição, emoção e detalhes ricos. Texto Original: "${context}"`; try { const textParams = new URLSearchParams({ referrer: APP_REFERRER }); const url = `https://text.pollinations.ai/${encodeURIComponent(artDirectorPrompt)}?${textParams.toString()}`; const response = await fetchWithTimeout(url); if (!response.ok) return context; return (await response.text()).trim(); } catch (error) { console.error("Falha ao criar prompt de imagem:", error); return context; } }
 function generateImageUrl(detailedPrompt) { const encodedPrompt = encodeURIComponent(detailedPrompt); const params = new URLSearchParams({ width: 1536, height: 1024, seed: Date.now(), model: 'flux', nologo: 'true', private: 'true', referrer: APP_REFERRER }); return `https://image.pollinations.ai/prompt/${encodedPrompt}?${params.toString()}`; }
-async function playAudio(buttonElement, text) { const originalText = buttonElement.textContent; buttonElement.textContent = 'Carregando...'; buttonElement.disabled = true; try { const encodedText = encodeURIComponent(text); const audioUrl = `https://text.pollinations.ai/${encodedText}?model=openai-audio&voice=nova&referrer=${APP_REFERRER}`; const audio = new Audio(audioUrl); await audio.play(); await new Promise(resolve => { audio.onended = resolve; }); } catch (error) { console.error("Erro ao reproduzir áudio:", error); buttonElement.textContent = 'Erro!'; setTimeout(() => { buttonElement.textContent = originalText; buttonElement.disabled = false; }, 2000); return; } buttonElement.textContent = originalText; buttonElement.disabled = false; }
 async function updateSummary() { const newMessages = conversationHistory.slice(lastSummaryIndex); if (newMessages.length === 0) return; const newMessagesText = newMessages.map(m => `${m.isUser ? 'Usuário' : 'IA'}: ${m.content}`).join('\n'); const summaryPrompt = `Integre as 'Mensagens Recentes' a um 'Resumo Antigo' para criar um 'Novo Resumo Conciso', mantendo fatos importantes. [Resumo Antigo]: ${conversationSummary} [Mensagens Recentes]: ${newMessagesText} [Novo Resumo Conciso]:`; try { const textParams = new URLSearchParams({ referrer: APP_REFERRER }); const url = `https://text.pollinations.ai/${encodeURIComponent(summaryPrompt)}?${textParams.toString()}`; const response = await fetchWithTimeout(url); if (response.ok) { conversationSummary = (await response.text()).trim(); lastSummaryIndex = conversationHistory.length; saveState(); updateSummaryDisplay(); } } catch (error) { console.error("Falha ao atualizar o resumo:", error); } }
 async function copyToClipboard(buttonElement) { const messageDiv = buttonElement.closest('.max-w-\\[80\\%\\]'); const textToCopy = messageDiv.querySelector('p').innerText; const feedbackElement = messageDiv.querySelector('.copy-feedback'); try { await navigator.clipboard.writeText(textToCopy); buttonElement.textContent = 'Copiado!'; buttonElement.disabled = true; feedbackElement.textContent = 'Sucesso!'; feedbackElement.style.color = '#2f855a'; feedbackElement.classList.add('show'); setTimeout(() => { buttonElement.textContent = 'Copiar'; buttonElement.disabled = false; feedbackElement.classList.remove('show'); }, 2000); } catch (err) { console.error('Falha ao copiar texto: ', err); feedbackElement.textContent = 'Falha ao copiar!'; feedbackElement.style.color = '#c53030'; feedbackElement.classList.add('show'); setTimeout(() => { feedbackElement.classList.remove('show'); }, 2000); } }
+
+/**
+ * **CORRIGIDO:** Função de áudio robusta que pré-carrega o áudio para tratar erros.
+ * @param {HTMLButtonElement} buttonElement O botão "Ouvir" que foi clicado.
+ * @param {string} text O texto a ser convertido em fala.
+ */
+async function playAudio(buttonElement, text) {
+    const originalText = buttonElement.textContent;
+    buttonElement.textContent = 'Carregando...';
+    buttonElement.disabled = true;
+    let localAudioUrl = null;
+
+    try {
+        const encodedText = encodeURIComponent(text);
+        const audioUrl = `https://text.pollinations.ai/${encodedText}?model=openai-audio&voice=nova&referrer=${APP_REFERRER}`;
+        
+        // 1. Pré-carrega o áudio e verifica se a resposta é válida
+        const response = await fetchWithTimeout(audioUrl);
+        if (!response.ok || !response.headers.get('Content-Type')?.includes('audio/mpeg')) {
+            throw new Error('A API não retornou um arquivo de áudio válido.');
+        }
+
+        // 2. Cria uma URL local para o áudio, que é mais estável para tocar
+        const blob = await response.blob();
+        localAudioUrl = URL.createObjectURL(blob);
+        const audio = new Audio(localAudioUrl);
+
+        // 3. Toca o áudio e espera ele terminar
+        await new Promise((resolve, reject) => {
+            audio.onended = resolve;
+            audio.onerror = reject;
+            audio.play().catch(reject); // Captura erros iniciais de reprodução
+        });
+
+    } catch (error) {
+        console.error("Erro ao reproduzir áudio:", error);
+        buttonElement.textContent = 'Erro!';
+        setTimeout(() => {
+            buttonElement.textContent = originalText;
+            buttonElement.disabled = false;
+        }, 2000);
+        return;
+    } finally {
+        // 4. Limpa a URL local da memória
+        if (localAudioUrl) {
+            URL.revokeObjectURL(localAudioUrl);
+        }
+    }
+
+    // Retorna ao estado original se tudo deu certo
+    buttonElement.textContent = originalText;
+    buttonElement.disabled = false;
+}
+
 
 // --- 4. RENDERIZAÇÃO E UI ---
 function updateSummaryDisplay() { summaryDisplay.textContent = conversationSummary; }
