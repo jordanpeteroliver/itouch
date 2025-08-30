@@ -49,12 +49,12 @@
                 <div>
                     <label class="block text-gray-700 font-bold mb-2">Persona Predefinida</label>
                     <select id="personaSelect" class="w-full p-2 border rounded">
-                        <option value="custom">Personalizada</option>
+                        <option value="pirata">Capitão Pirata</option>
                         <option value="mago">Mago Arcano</option>
                         <option value="detetive">Detetive Noir</option>
                         <option value="elfo">Elfo da Floresta</option>
                         <option value="cientista">Cientista Maluco</option>
-                        <option value="pirata">Capitão Pirata</option>
+                        <option value="custom">Personalizada</option>
                     </select>
                 </div>
                 <div>
@@ -93,27 +93,34 @@
         const summaryDisplay = document.getElementById('summaryDisplay');
         const APP_REFERRER = "https://jordanpeteroliver.github.io/itouch/";
         const predefinedPersonas = {
-            "custom": "Você é um assistente de IA prestativo.",
+            "pirata": "Você é um Capitão Pirata aventureiro, com um papagaio no ombro, navegando pelos sete mares. Você usa gírias náuticas, fala sobre tesouros e conta histórias de monstros marinhos e ilhas distantes.",
             "mago": "Você é um poderoso Mago Arcano, versado nas artes místicas antigas. Seu conhecimento é vasto, mas você fala de forma enigmática e usa metáforas mágicas.",
             "detetive": "Você é um Detetive Noir dos anos 40, cínico e perspicaz. Seu tom é seco e direto, sempre observando os detalhes ocultos em um mundo de sombras e chuva.",
             "elfo": "Você é um Elfo milenar da Floresta Ancestral, guardião da natureza. Sua fala é poética e serena, e você frequentemente referencia o ciclo das estações, as estrelas e a linguagem das árvores.",
             "cientista": "Você é um Cientista Maluco excêntrico, sempre entusiasmado com experimentos perigosos e invenções mirabolantes. Você mistura termos científicos com risadas maníacas e ideias grandiosas.",
-            "pirata": "Você é um Capitão Pirata aventureiro, com um papagaio no ombro, navegando pelos sete mares. Você usa gírias náuticas, fala sobre tesouros e conta histórias de monstros marinhos e ilhas distantes."
+            "custom": "Você é um assistente de IA prestativo." // Padrão para personalizada
         };
 
         // --- 2. GERENCIAMENTO DE ESTADO ---
-        let conversationHistory = [], conversationSummary = "", lastSummaryIndex = 0, lastBackgroundImageUrl = "", isBackgroundAfterActive = false;
+        let conversationHistory = [], conversationSummary = "", lastSummaryIndex = 0, lastBackgroundImageUrl = "", isBackgroundAfterActive = false, customPersonaText = "";
         function saveState() {
             localStorage.setItem('conversationHistory', JSON.stringify(conversationHistory));
             localStorage.setItem('conversationSummary', conversationSummary);
             localStorage.setItem('lastSummaryIndex', lastSummaryIndex.toString());
             localStorage.setItem('lastBackgroundImageUrl', lastBackgroundImageUrl);
+            localStorage.setItem('customPersonaText', customPersonaText);
+            localStorage.setItem('selectedPersona', personaSelect.value);
         }
         function loadState() {
             conversationHistory = JSON.parse(localStorage.getItem('conversationHistory')) || [];
             conversationSummary = localStorage.getItem('conversationSummary') || "A conversa está apenas começando.";
             lastSummaryIndex = parseInt(localStorage.getItem('lastSummaryIndex')) || 0;
             lastBackgroundImageUrl = localStorage.getItem('lastBackgroundImageUrl') || "";
+            customPersonaText = localStorage.getItem('customPersonaText') || "";
+            const savedPersona = localStorage.getItem('selectedPersona') || "pirata";
+            personaSelect.value = savedPersona;
+            customPersona.value = savedPersona === "custom" ? customPersonaText : predefinedPersonas[savedPersona];
+            customPersona.disabled = savedPersona !== "custom";
             updateSummaryDisplay();
         }
 
@@ -319,7 +326,7 @@
             messageHistory.appendChild(typingDiv);
             messageHistory.scrollTop = messageHistory.scrollHeight;
             try {
-                const persona = personaSelect.value === 'custom' ? customPersona.value : predefinedPersonas[personaSelect.value];
+                const persona = personaSelect.value === 'custom' ? (customPersona.value.trim() || predefinedPersonas['custom']) : predefinedPersonas[personaSelect.value];
                 const recentHistoryText = conversationHistory.slice(-6).map(m => `${m.isUser ? 'Usuário' : 'IA'}: ${m.content}`).join('\n');
                 const promptComContexto = `Resumo da Conversa:\n${conversationSummary}\n\nHistórico Recente:\n${recentHistoryText}\n\nUsuário: ${userMessageContent}\n\nIA:`;
                 const textParams = new URLSearchParams({ system: persona, referrer: APP_REFERRER });
@@ -349,16 +356,23 @@
         personaSelect.addEventListener('change', () => {
             const selectedValue = personaSelect.value;
             if (selectedValue === 'custom') {
-                customPersona.value = '';
+                customPersona.value = customPersonaText || '';
                 customPersona.disabled = false;
                 customPersona.focus();
             } else {
                 customPersona.value = predefinedPersonas[selectedValue];
                 customPersona.disabled = true;
             }
+            saveState();
+        });
+        customPersona.addEventListener('input', () => {
+            if (personaSelect.value === 'custom') {
+                customPersonaText = customPersona.value.trim();
+                saveState();
+            }
         });
         clearHistoryBtn.addEventListener('click', () => {
-            if (confirm("Tem certeza que deseja apagar toda a memória e o histórico da conversa?")) {
+            if (confirm("Tem certeza que deseja apagar toda a memória, o histórico da conversa e a persona personalizada?")) {
                 localStorage.clear();
                 window.location.reload();
             }
@@ -371,7 +385,6 @@
                 bodyEl.style.setProperty('--bg-image-before', 'linear-gradient(to bottom right, #D1C4E9, #BBDEFB)');
             }
             loadChatHistory();
-            customPersona.value = "";
             userInput.focus();
         });
     </script>
