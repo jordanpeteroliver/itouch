@@ -1,0 +1,7 @@
+{
+    "github.copilot.chat.codeGeneration.useInstructionFiles": false,
+    "github.copilot.chat.customInstructionsInSystemMessage": false,
+    "github.copilot.chat.reviewSelection.enabled": false,
+    "github.copilot.chat.reviewAgent.enabled": false,
+    "inlineChat.lineNaturalLanguageHint": false
+}
